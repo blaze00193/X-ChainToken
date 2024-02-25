@@ -12,10 +12,11 @@ contract MocaTokenAdaptor is OFTAdapter, Pausable {
     /**
      * @param _token a deployed, already existing ERC20 token address
      * @param _layerZeroEndpoint local endpoint address
+     * @param _delegate The address capable of making OApp configurations inside of the endpoint.
      * @param _owner token owner
      */
-    constructor(address _token, address _layerZeroEndpoint, address _owner) OFTAdapter(_token, _layerZeroEndpoint, _owner) Ownable(_owner) {
-
+    constructor(address _token, address _layerZeroEndpoint, address _delegate, address _owner) 
+        OFTAdapter(_token, _layerZeroEndpoint, _delegate) Ownable(_owner) {
     }
 
 

@@ -12,10 +12,11 @@ contract MocaOFT is OFT {
      * @param _name token name
      * @param _symbol token symbol
      * @param _lzEndpoint LayerZero Endpoint address
+     * @param _delegate The address capable of making OApp configurations inside of the endpoint.
      * @param _owner token owner
      */
-    constructor(string memory _name, string memory _symbol, address _lzEndpoint,  address _owner) 
-        OFT(_name, _symbol, _lzEndpoint, _owner) Ownable(_owner) {
+    constructor(string memory _name, string memory _symbol, address _lzEndpoint, address _delegate, address _owner) 
+        OFT(_name, _symbol, _lzEndpoint, _delegate) Ownable(_owner) {
         
     }
 

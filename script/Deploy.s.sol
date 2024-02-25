@@ -12,16 +12,22 @@ abstract contract LZState {
     //Note: LZV2 testnet addresses
 
     uint16 public sepoliaID = 40161;
-    address public sepoliaEP = 0x6edce65403992e310a62460808c4b910d972f10f;
+    address public sepoliaEP = 0x6EDCE65403992e310A62460808c4b910D972f10f;
 
     uint16 public mumbaiID = 40109;
-    address public mumbaiEP = 0x6edce65403992e310a62460808c4b910d972f10f;
+    address public mumbaiEP = 0x6EDCE65403992e310A62460808c4b910D972f10f;
 
     uint16 public arbSepoliaID = 40231;
-    address public arbSepoliaEP = 0x6edce65403992e310a62460808c4b910d972f10f;
+    address public arbSepoliaEP = 0x6EDCE65403992e310A62460808c4b910D972f10f;
+
+    uint16 homeChainID = mumbaiID;
+    address homeLzEP = mumbaiEP;
+
+    uint16 remoteChainID = arbSepoliaID;
+    address remoteLzEP = arbSepoliaEP;
 }
 
-//Note: Sepolia
+//Note: Deploy token + adaptor
 contract DeployHome is Script, LZState {
     
     function run() public {
@@ -29,7 +35,17 @@ contract DeployHome is Script, LZState {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        TestToken testToken = new TestToken("TestToken", "TT", 8, sepoliaEP);
+        // mint supply to treasury
+        string memory name = "TestToken"; 
+        string memory symbol = "TT";
+        address treasury = msg.sender;
+        MocaToken mocaToken = new MocaToken(name, symbol, treasury);
+        
+        // set msg.sender as delegate and owner
+        address deletate = msg.sender;
+        address owner = msg.sender;
+        MocaTokenAdaptor mocaTokenAdaptor = new MocaTokenAdaptor(address(mocaToken), homeLzEP, deletate, owner);
+
         vm.stopBroadcast();
     }
 }
@@ -43,7 +59,7 @@ contract DeployHome is Script, LZState {
 */
 
 
-//Note: goerli
+//Note: Deploy OFT on remote
 contract DeployElsewhere is Script, LZState {
 
     function run() public {
@@ -51,7 +67,13 @@ contract DeployElsewhere is Script, LZState {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        TestTokenElsewhere testToken = new TestTokenElsewhere("TestToken", "TT", 8, goerliEP);
+        //params
+        string memory name = "TestToken"; 
+        string memory symbol = "TT";
+        address delegate = msg.sender;
+        address owner = msg.sender;
+
+        MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, delegate, owner);
         vm.stopBroadcast();
     }
 }
@@ -63,11 +85,18 @@ contract DeployElsewhere is Script, LZState {
 
 abstract contract State is LZState {
 
-    address payable public homeChainTokenContract = payable(0x0959c593bB41A340Dcd9CA6c090c2F919000B28d);    //sepolia
-    address public awayChainTokenContract = 0x0ADAFB8574b3a59cF3176e1bD278C951c445D94d;                     //goerli
+    address public mocaTokenAddress = address(0);    
+    address public mocaTokenAdaptorAddress = address(0);                     
 
-    uint16 public homeChainId = sepoliaID;    //sepolia
-    uint16 public awayChainId = goerliID;    //goerli
+    // remote
+    address public mocaOFTAddress = address(0);
+
+    // set contracts
+    MocaToken public mocaToken = MocaToken(mocaTokenAddress);
+    MocaTokenAdaptor public mocaTokenAdaptor = MocaTokenAdaptor(mocaTokenAdaptorAddress);
+
+    MocaOFT public mocaOFT = MocaOFT(mocaOFTAddress);
+
 }
 
 
@@ -78,17 +107,12 @@ contract SetRemoteOnHome is State, Script {
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-
-        TestToken testToken = TestToken(homeChainTokenContract);
-
-        // bytes path: concats the remote and the local contract address using abi.encodePacked(): [REMOTE_ADDRESS, LOCAL_ADDRESS]
-        uint16 _remoteChainId = awayChainId;
-        address remote = awayChainTokenContract;
-        address local = homeChainTokenContract;
-        bytes memory path = abi.encodePacked(remote, local);
+       
+        // eid: The endpoint ID for the destination chain the other OFT contract lives on
+        // peer: The destination OFT contract address in bytes32 format
+        bytes32 peer = bytes32(uint256(uint160(address(mocaOFTAddress))));
+        mocaTokenAdaptor.setPeer(remoteChainID, peer);
         
-        testToken.setTrustedRemote(_remoteChainId, path); 
-
         vm.stopBroadcast();
     }
 }
@@ -102,37 +126,37 @@ contract SetRemoteOnAway is State, Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        TestTokenElsewhere testToken = TestTokenElsewhere(awayChainTokenContract);
-
-        // path: concats the remote and the local contract address using abi.encodePacked()
-        uint16 _remoteChainId = homeChainId;
-        address remote = homeChainTokenContract;
-        address local = awayChainTokenContract;
-        bytes memory _path = abi.encodePacked(remote, local);
+        // eid: The endpoint ID for the destination chain the other OFT contract lives on
+        // peer: The destination OFT contract address in bytes32 format
+        bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdaptor))));
+        mocaOFT.setPeer(homeChainID, peer);
         
-        testToken.setTrustedRemote(_remoteChainId, _path); 
-
         vm.stopBroadcast();
     }
-
 }
 
 // forge script script/Deploy.s.sol:SetRemoteOnAway --rpc-url goerli --broadcast -vvvv
 
 
 // ------------------------------------------- Gas Limits -------------------------
+
+import { IOAppOptionsType3, EnforcedOptionParam } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/interfaces/IOAppOptionsType3.sol";
+
 contract SetGasLimitsHome is State, Script {
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        TestToken testToken = TestToken(homeChainTokenContract);
+        EnforcedOptionParam memory enforcedOptionParam;
+        // msgType:1 -> a standard token transfer via send()
+        // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
+        enforcedOptionParam = EnforcedOptionParam({eid: remoteChainID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
+    
+        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+        enforcedOptionParams[0] = enforcedOptionParam;
 
-        //uint16 _dstChainId,
-        //uint16 _packetType,
-        //uint _minGas
-        testToken.setMinDstGas(awayChainId, 0, 200000);
+        mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
         vm.stopBroadcast();
     }
@@ -147,13 +171,15 @@ contract SetGasLimitsAway is State, Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         
-        // token on mumbai
-        TestTokenElsewhere testToken = TestTokenElsewhere(awayChainTokenContract);
+        EnforcedOptionParam memory enforcedOptionParam;
+        // msgType:1 -> a standard token transfer via send()
+        // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
+        enforcedOptionParam = EnforcedOptionParam({eid: homeChainID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
+        
+        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+        enforcedOptionParams[0] = enforcedOptionParam;
 
-        //uint16 _dstChainId,
-        //uint16 _packetType,
-        //uint _minGas
-        testToken.setMinDstGas(homeChainId, 0, 200000);
+        mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
         vm.stopBroadcast();
     }
@@ -164,64 +190,46 @@ contract SetGasLimitsAway is State, Script {
 
 // ------------------------------------------- Send sum tokens  -------------------------
 
-import "lib/solidity-examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
+// SendParam
+import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
+import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
-// sepolia -> goerli
 contract SendTokensToAway is State, Script {
 
-    struct LzCallParams {
-        address payable refundAddress;
-        address zroPaymentAddress;
-        bytes adapterParams;
-    }
 
     function run() public {
+
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        TestToken testToken = TestToken(homeChainTokenContract);
+        //set approval for adaptor to spend tokens
+        mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
 
-        // defaultAdapterParams: min/max gas?
-        bytes memory defaultAdapterParams = abi.encodePacked(uint16(1), uint256(200000));
-
-        // let nativeFee = (await localOFT.estimateSendFee(remoteChainId, bobAddressBytes32, initialAmount, false, defaultAdapterParams)).nativeFee
-        (uint256 nativeFee, ) = testToken.estimateSendFee(goerliID, bytes32(uint256(uint160(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825))), 1e18, false, defaultAdapterParams);
-
-        /**
-        * @dev send `_amount` amount of token to (`_dstChainId`, `_toAddress`) from `_from`
-        * `_from` the owner of token
-        * `_dstChainId` the destination chain identifier
-        * `_toAddress` can be any size depending on the `dstChainId`.
-        * `_amount` the quantity of tokens in wei
-        * `_refundAddress` the address LayerZero refunds if too much message fee is sent
-        * `_zroPaymentAddress` set to address(0x0) if not paying in ZRO (LayerZero Token)
-        * `_adapterParams` is a flexible bytes array to indicate messaging adapter services
-        */ 
-
-        // sender sends tokens to himself on the remote chain
         
-        // sender
-        address _from = 0x2BF003ec9B7e2a5A8663d6B0475370738FA39825;
-        // receiver
-        uint16 _dstChainId = goerliID;
-        bytes32 _toAddress = bytes32(uint256(uint160(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825)));
-        uint256 _amount = 1e18;
-        
-        ICommonOFT.LzCallParams memory _callParams;
-        _callParams = ICommonOFT.LzCallParams({refundAddress: payable(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825), zroPaymentAddress: address(0), adapterParams: defaultAdapterParams});
+        SendParam memory sendParam = SendParam({
+            dstEid: remoteChainID,
+            to: bytes32(uint256(uint160(address(msg.sender)))),
+            amountLD: 1e18,
+            minAmountLD: 1e18,
+            extraOptions: '0x',
+            composeMsg: '0x',
+            oftCmd: '0x'
+        });
 
-        testToken.sendFrom{value: nativeFee}(_from, _dstChainId, _toAddress, _amount, _callParams);
+        // Fetching the native fee for the token send operation
+        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+
+        // send tokens xchain
+        mocaTokenAdaptor.send(sendParam, messagingFee, payable(msg.sender));
 
         vm.stopBroadcast();
     }
-
 }
 
 //  forge script script/Deploy.s.sol:SendTokensToAway --rpc-url sepolia --broadcast -vvvv
 
-// mint + allowance on endpoint.
-// msg.sender:  0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38  -> foundry bug?
 
+/*
 contract SendTokensToAwayAndCall is State, Script {
 
     struct LzCallParams {
@@ -264,6 +272,6 @@ contract SendTokensToAwayAndCall is State, Script {
     }
 }
 
-
+*/
 
 //  forge script script/Deploy.s.sol:SendTokensToAwayAndCall --rpc-url sepolia --broadcast -vvvv
