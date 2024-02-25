@@ -6,6 +6,7 @@ libs = ["lib"]
 remappings = [
     '@layerzerolabs/=node_modules/@layerzerolabs/',
     '@openzeppelin/=node_modules/@openzeppelin/',
+    '@sphinx-labs/contracts/=lib/sphinx/packages/contracts/contracts/foundry'
 ]
 
 
