@@ -3,4 +3,24 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
+remappings = [
+    '@layerzerolabs/=node_modules/@layerzerolabs/',
+    '@openzeppelin/=node_modules/@openzeppelin/',
+]
+
+
+[rpc_endpoints]
+mumbai = "https://polygon-mumbai.infura.io/v3/${MUMBAI_RPC_INFURA}"
+goerli = "https://goerli.infura.io/v3/${GOERLI_RPC_INFURA}"
+sepolia = "https://sepolia.infura.io/v3/${SEPOLIA_RPC_INFURA}"
+mainnet = "https://mainnet.infura.io/v3/${ETH_RPC_INFURA}"
+polygon = "https://polygon-mainnet.infura.io/v3/2b4d9586145e47158453854b82fe4279"
+
+[etherscan]
+goerli = { key = "${ETHERSCAN_API_KEY}" }
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
+polygon = { key = "${POLYGONSCAN_API_KEY}" }
+mumbai = { key = "${POLYGONSCAN_API_KEY}" }
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

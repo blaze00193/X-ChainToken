@@ -1,0 +1,138 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IInterchainAddressTracker",
+  "sourceName": "contracts/interfaces/IInterchainAddressTracker.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "LengthMismatch",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "UntrustedChain",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroStringLength",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "chain",
+          "type": "string"
+        }
+      ],
+      "name": "TrustedAddressRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "chain",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "address_",
+          "type": "string"
+        }
+      ],
+      "name": "TrustedAddressSet",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "chainName",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "chain",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "address_",
+          "type": "string"
+        }
+      ],
+      "name": "isTrustedAddress",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "chain",
+          "type": "string"
+        }
+      ],
+      "name": "trustedAddress",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "trustedAddress_",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "chain",
+          "type": "string"
+        }
+      ],
+      "name": "trustedAddressHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "trustedAddressHash_",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

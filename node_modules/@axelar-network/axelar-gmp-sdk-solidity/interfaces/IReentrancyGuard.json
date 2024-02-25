@@ -1,0 +1,16 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IReentrancyGuard",
+  "sourceName": "contracts/interfaces/IReentrancyGuard.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "ReentrantCall",
+      "type": "error"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

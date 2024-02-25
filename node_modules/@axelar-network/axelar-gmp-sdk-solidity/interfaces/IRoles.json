@@ -1,0 +1,323 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IRoles",
+  "sourceName": "contracts/interfaces/IRoles.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "InvalidProposedAccount",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "fromAccount",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "toAccount",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "accountRoles",
+          "type": "uint256"
+        }
+      ],
+      "name": "InvalidProposedRoles",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "accountRoles",
+          "type": "uint256"
+        }
+      ],
+      "name": "MissingAllRoles",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "accountRoles",
+          "type": "uint256"
+        }
+      ],
+      "name": "MissingAnyOfRoles",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8",
+          "name": "role",
+          "type": "uint8"
+        }
+      ],
+      "name": "MissingRole",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "accountRoles",
+          "type": "uint256"
+        }
+      ],
+      "name": "RolesAdded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "fromAccount",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "toAccount",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "accountRoles",
+          "type": "uint256"
+        }
+      ],
+      "name": "RolesProposed",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "accountRoles",
+          "type": "uint256"
+        }
+      ],
+      "name": "RolesRemoved",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "fromAccount",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8[]",
+          "name": "roles",
+          "type": "uint8[]"
+        }
+      ],
+      "name": "acceptRoles",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "getAccountRoles",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "accountRoles",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "fromAccount",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "toAccount",
+          "type": "address"
+        }
+      ],
+      "name": "getProposedRoles",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "proposedRoles_",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8[]",
+          "name": "roles",
+          "type": "uint8[]"
+        }
+      ],
+      "name": "hasAllTheRoles",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8[]",
+          "name": "roles",
+          "type": "uint8[]"
+        }
+      ],
+      "name": "hasAnyOfRoles",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8",
+          "name": "role",
+          "type": "uint8"
+        }
+      ],
+      "name": "hasRole",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "toAccount",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8[]",
+          "name": "roles",
+          "type": "uint8[]"
+        }
+      ],
+      "name": "proposeRoles",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "toAccount",
+          "type": "address"
+        },
+        {
+          "internalType": "uint8[]",
+          "name": "roles",
+          "type": "uint8[]"
+        }
+      ],
+      "name": "transferRoles",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
