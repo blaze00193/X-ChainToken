@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC721 } from "node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-import { OApp, Origin, MessagingFee } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { OApp, Origin, MessagingFee } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
+import { Ownable } from "node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 import { RevertMsgExtractor } from "./../utils/RevertMsgExtractor.sol";
 
