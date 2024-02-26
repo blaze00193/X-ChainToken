@@ -21,11 +21,15 @@ abstract contract LZState is Sphinx {
     uint16 public arbSepoliaID = 40231;
     address public arbSepoliaEP = 0x6EDCE65403992e310A62460808c4b910D972f10f;
 
-    uint16 homeChainID = mumbaiID;
+    uint16 homeChainLzID = mumbaiID;
     address homeLzEP = mumbaiEP;
 
-    uint16 remoteChainID = arbSepoliaID;
+    uint16 remoteChainLZID = arbSepoliaID;
     address remoteLzEP = arbSepoliaEP;
+
+    uint256 homeChainId = 80001;     // mumbai
+    uint256 remoteChainId = 421614;  // arb_sepolia
+
 
     // Sphinx setup
     function setUp() public {
@@ -45,31 +49,99 @@ abstract contract LZState is Sphinx {
 }
 
 //Note: Deploy token + adaptor
-contract DeployHome is Script, LZState {
+contract Deploy is Script, LZState {
     
     function run() public sphinx {
-
-        // mint supply to treasury
-        string memory name = "TestToken"; 
-        string memory symbol = "TT";
-        address treasury = msg.sender;
-        MocaToken mocaToken = new MocaToken(name, symbol, treasury);
         
-        // set msg.sender as delegate and owner
-        address deletate = msg.sender;
-        address owner = msg.sender;
-        MocaTokenAdaptor mocaTokenAdaptor = new MocaTokenAdaptor(address(mocaToken), homeLzEP, deletate, owner);
+        // Home: Mumbai
+        if (block.chainid == homeChainId) { 
+
+            // mint supply to treasury
+            string memory name = "TestToken"; 
+            string memory symbol = "TT";
+            address treasury = msg.sender;
+            MocaToken mocaToken = new MocaToken(name, symbol, treasury);
+            
+            // set msg.sender as delegate and owner
+            address deletate = msg.sender;
+            address owner = msg.sender;
+            MocaTokenAdaptor mocaTokenAdaptor = new MocaTokenAdaptor(address(mocaToken), homeLzEP, deletate, owner);
+        } 
+        // Remote: 
+        else if (block.chainid == remoteChainId) { 
+            //params
+            string memory name = "TestToken"; 
+            string memory symbol = "TT";
+            address delegate = msg.sender;
+            address owner = msg.sender;
+
+            MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, delegate, owner);
+        }
+
+        // setup params
+
+        if (block.chainid == homeChainId) {
+
+            //............ Set peer on Home
+            bytes32 peer = bytes32(uint256(uint160(address(mocaOFT))));
+            mocaTokenAdaptor.setPeer(remoteChainLZID, peer);
+
+            //............ Set gasLimits on Home
+
+            EnforcedOptionParam memory enforcedOptionParam;
+            // msgType:1 -> a standard token transfer via send()
+            // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
+            enforcedOptionParam = EnforcedOptionParam({eid: remoteChainLZID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
+        
+            EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+            enforcedOptionParams[0] = enforcedOptionParam;
+
+            mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
+
+            // .............. Send some tokens
+            
+            //set approval for adaptor to spend tokens
+            mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
+
+            // send params
+            SendParam memory sendParam = SendParam({
+                dstEid: remoteChainLZID,
+                to: bytes32(uint256(uint160(address(msg.sender)))),
+                amountLD: 1e18,
+                minAmountLD: 1e18,
+                extraOptions: '0x',
+                composeMsg: '0x',
+                oftCmd: '0x'
+            });
+
+            // Fetching the native fee for the token send operation
+            MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+
+            // send tokens xchain
+            mocaTokenAdaptor.send(sendParam, messagingFee, payable(msg.sender));
+
+        } else if (block.chainid == remoteChainId) {
+
+            //............ Set peer on Remote
+
+            bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdaptor))));
+            remoteOFT.setPeer(homeChainLzID, peer);
+                       
+            //............ Set gasLimits on Remote
+
+            EnforcedOptionParam memory enforcedOptionParam;
+            // msgType:1 -> a standard token transfer via send()
+            // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
+            enforcedOptionParam = EnforcedOptionParam({eid: homeChainID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
+            
+            EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+            enforcedOptionParams[0] = enforcedOptionParam;
+
+            remoteOFT.setEnforcedOptions(enforcedOptionParams);    
+        }
 
     }
 }
-
-
-/**
-    forge script script/Deploy.s.sol:DeployHome --rpc-url sepolia --broadcast --verify -vvvv --etherscan-api-key sepolia
-    
-    backup RPC:
-    forge script script/Deploy.s.sol:DeployHome --rpc-url "https://rpc-mumbai.maticvigil.com" --broadcast --verify -vvvv --legacy --etherscan-api-key polygon
-*/
 
 
 //Note: Deploy OFT on remote
