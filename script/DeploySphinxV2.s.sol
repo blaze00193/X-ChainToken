@@ -71,7 +71,7 @@ contract DeployV2 is LZState {
         // ------------- MOCA TOKEN ADAPTOR ----------------------------------------------------
         address token = address(mocaToken);
         address layerZeroEndpoint = homeLzEP;
-        address deletate = safeAddress();
+        address delegate = safeAddress();
         address owner = safeAddress();
 
         bytes memory mocaAdaptorParams = abi.encode(token, layerZeroEndpoint, delegate, owner);
@@ -86,8 +86,8 @@ contract DeployV2 is LZState {
         // ------------- MOCA TOKEN OFT: REMOTE --------------------------------------------------
 
         address layerZeroEndpointRemote = remoteLzEP;
-        address deletate = safeAddress();
-        address owner = safeAddress();
+        //address deletate = safeAddress();
+        //address owner = safeAddress();
 
         bytes memory mocaOFTparams = abi.encode(name, symbol, layerZeroEndpointRemote, delegate, owner);
         
