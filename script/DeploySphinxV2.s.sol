@@ -46,6 +46,10 @@ abstract contract LZState is Sphinx {
         sphinxConfig.threshold = 1;
     }
 
+
+}
+
+contract DeployV2 is LZState {
     function run() public sphinx {
         
         //Pre-compile the `CREATE2` addresses of contracts
@@ -172,10 +176,6 @@ abstract contract LZState is Sphinx {
         }
 
     }
-
-
-
-
-
 }
-// npx sphinx propose script/DeploySphinxV2.s.sol --networks testnets --tc <contractName>
+
+// npx sphinx propose script/DeploySphinxV2.s.sol --networks testnets --tc DeployV2
