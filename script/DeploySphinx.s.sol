@@ -2,12 +2,13 @@
 pragma solidity ^0.8.20;
 
 import {Script, console2} from "forge-std/Script.sol";
+import {Sphinx, Network} from "@sphinx-labs/contracts/SphinxPlugin.sol";
 
 import {MocaToken} from "./../src/token/MocaToken.sol";
 import {MocaOFT} from "./../src/token/MocaOFT.sol";
 import {MocaTokenAdaptor} from "./../src/token/MocaTokenAdaptor.sol";
 
-abstract contract LZState {
+abstract contract LZState, Sphinx {
     
     //Note: LZV2 testnet addresses
 
@@ -25,15 +26,28 @@ abstract contract LZState {
 
     uint16 remoteChainID = arbSepoliaID;
     address remoteLzEP = arbSepoliaEP;
+
+    // Sphinx setup
+    function setUp() public {
+
+        sphinxConfig.owners = [address(0)]; // Add owner(s)
+        sphinxConfig.orgId = ""; // Add Sphinx org ID
+        
+        sphinxConfig.testnets = [
+            Network.sepolia,
+            Network.polygon_mumbai
+        ];
+
+        sphinxConfig.projectName = "Moca";
+        sphinxConfig.threshold = 1;
+    }
+
 }
 
 //Note: Deploy token + adaptor
 contract DeployHome is Script, LZState {
     
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    function run() public sphinx {
 
         // mint supply to treasury
         string memory name = "TestToken"; 
@@ -46,7 +60,6 @@ contract DeployHome is Script, LZState {
         address owner = msg.sender;
         MocaTokenAdaptor mocaTokenAdaptor = new MocaTokenAdaptor(address(mocaToken), homeLzEP, deletate, owner);
 
-        vm.stopBroadcast();
     }
 }
 
@@ -62,11 +75,7 @@ contract DeployHome is Script, LZState {
 //Note: Deploy OFT on remote
 contract DeployElsewhere is Script, LZState {
 
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
+    function run() public sphinx {
         //params
         string memory name = "TestToken"; 
         string memory symbol = "TT";
@@ -74,7 +83,6 @@ contract DeployElsewhere is Script, LZState {
         address owner = msg.sender;
 
         MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, delegate, owner);
-        vm.stopBroadcast();
     }
 }
 
@@ -103,17 +111,12 @@ abstract contract State is LZState {
 // ------------------------------------------- Trusted Remotes: connect contracts -------------------------
 contract SetRemoteOnHome is State, Script {
 
-    function run() public  {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    function run() public sphinx {
        
         // eid: The endpoint ID for the destination chain the other OFT contract lives on
         // peer: The destination OFT contract address in bytes32 format
         bytes32 peer = bytes32(uint256(uint160(address(mocaOFTAddress))));
         mocaTokenAdaptor.setPeer(remoteChainID, peer);
-        
-        vm.stopBroadcast();
     }
 }
 
@@ -121,17 +124,13 @@ contract SetRemoteOnHome is State, Script {
 
 contract SetRemoteOnAway is State, Script {
 
-    function run() public {
-        
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    function run() public sphinx {
 
         // eid: The endpoint ID for the destination chain the other OFT contract lives on
         // peer: The destination OFT contract address in bytes32 format
         bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdaptor))));
         mocaOFT.setPeer(homeChainID, peer);
-        
-        vm.stopBroadcast();
+
     }
 }
 
@@ -144,9 +143,7 @@ import { IOAppOptionsType3, EnforcedOptionParam } from "node_modules/@layerzerol
 
 contract SetGasLimitsHome is State, Script {
 
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    function run() public sphinx {
 
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
@@ -158,7 +155,6 @@ contract SetGasLimitsHome is State, Script {
 
         mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
-        vm.stopBroadcast();
     }
 }
 
@@ -167,10 +163,8 @@ contract SetGasLimitsHome is State, Script {
 
 contract SetGasLimitsAway is State, Script {
 
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-        
+    function run() public sphinx {
+      
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
@@ -181,7 +175,6 @@ contract SetGasLimitsAway is State, Script {
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
-        vm.stopBroadcast();
     }
 }
 
@@ -197,14 +190,10 @@ import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/
 contract SendTokensToAway is State, Script {
 
 
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
+    function run() public sphinx {
+    
         //set approval for adaptor to spend tokens
         mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
-
         
         SendParam memory sendParam = SendParam({
             dstEid: remoteChainID,
@@ -221,8 +210,6 @@ contract SendTokensToAway is State, Script {
 
         // send tokens xchain
         mocaTokenAdaptor.send(sendParam, messagingFee, payable(msg.sender));
-
-        vm.stopBroadcast();
     }
 }
 
