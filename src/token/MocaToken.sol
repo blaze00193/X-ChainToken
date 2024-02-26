@@ -8,7 +8,7 @@ contract MocaToken is EIP3009 {
 
     constructor(string memory name, string memory symbol, address treasury) ERC20(name, symbol) {
 
-        _mint(treasury, 8_888_888_888);
+        _mint(treasury, (8_888_888_888 * 1e18));
 
     }
 

@@ -56,6 +56,7 @@ abstract contract LZState is Sphinx {
 contract Deploy is Script, LZState {
     
     function run() public sphinx {
+        
         MocaToken mocaToken; 
         MocaTokenAdaptor mocaTokenAdaptor;
         MocaOFT mocaOFT;
