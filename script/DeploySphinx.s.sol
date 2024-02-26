@@ -8,7 +8,7 @@ import {MocaToken} from "./../src/token/MocaToken.sol";
 import {MocaOFT} from "./../src/token/MocaOFT.sol";
 import {MocaTokenAdaptor} from "./../src/token/MocaTokenAdaptor.sol";
 
-abstract contract LZState, Sphinx {
+abstract contract LZState is Sphinx {
     
     //Note: LZV2 testnet addresses
 
@@ -30,15 +30,15 @@ abstract contract LZState, Sphinx {
     // Sphinx setup
     function setUp() public {
 
-        sphinxConfig.owners = [address(0)]; // Add owner(s)
-        sphinxConfig.orgId = ""; // Add Sphinx org ID
+        sphinxConfig.owners = [address(0x5B7c596ef4804DC7802dB28618d353f7Bf14C619)]; // Add owner(s)
+        sphinxConfig.orgId = "clszio7580001djh8pvnrbaka"; // Add Sphinx org ID
         
         sphinxConfig.testnets = [
-            Network.sepolia,
+            Network.arbitrum_sepolia,
             Network.polygon_mumbai
         ];
 
-        sphinxConfig.projectName = "Moca";
+        sphinxConfig.projectName = "TestTokenV2";
         sphinxConfig.threshold = 1;
     }
 
