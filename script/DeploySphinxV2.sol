@@ -12,7 +12,7 @@ import { IOAppOptionsType3, EnforcedOptionParam } from "node_modules/@layerzerol
 import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
-abstract contract LZState is Sphinx {
+abstract contract LZState is Sphinx, Script {
     
     //Note: LZV2 testnet addresses
 
@@ -61,11 +61,11 @@ contract DeployV2 is LZState {
 
         bytes memory mocaTokenParams = abi.encode(name, symbol, treasury);
 
-        MocaToken mocaToken = vm.computeCreate2Address({
+        MocaToken mocaToken = MocaToken(vm.computeCreate2Address({
             salt: bytes32(0),
-            initCodeHash: abi.encodePacked(type(MocaToken).creationCode, mocaTokenParams),
+            initCodeHash: keccak256(abi.encodePacked(type(MocaToken).creationCode, mocaTokenParams)),
             deployer: CREATE2_FACTORY
-        });
+        }));
 
 
         // ------------- MOCA TOKEN ADAPTOR ----------------------------------------------------
@@ -76,11 +76,11 @@ contract DeployV2 is LZState {
 
         bytes memory mocaAdaptorParams = abi.encode(token, layerZeroEndpoint, delegate, owner);
         
-        MocaTokenAdaptor mocaTokenAdaptor = MocaTokenAdaptor({
+        MocaTokenAdaptor mocaTokenAdaptor = MocaTokenAdaptor(vm.computeCreate2Address({
             salt: bytes32(0),
-            initCodeHash: abi.encodePacked(type(MocaTokenAdaptor).creationCode, mocaAdaptorParams),
+            initCodeHash: keccak256(abi.encodePacked(type(MocaTokenAdaptor).creationCode, mocaAdaptorParams)),
             deployer: CREATE2_FACTORY
-        });
+        }));
 
 
         // ------------- MOCA TOKEN OFT: REMOTE --------------------------------------------------
@@ -91,11 +91,11 @@ contract DeployV2 is LZState {
 
         bytes memory mocaOFTparams = abi.encode(name, symbol, layerZeroEndpointRemote, delegate, owner);
         
-        MocaOFT mocaOFT = MocaOFT({
+        MocaOFT mocaOFT = MocaOFT(vm.computeCreate2Address({
             salt: bytes32(0),
-            initCodeHash: abi.encodePacked(type(MocaOFT).creationCode, mocaOFTparams),
+            initCodeHash: keccak256(abi.encodePacked(type(MocaOFT).creationCode, mocaOFTparams)),
             deployer: CREATE2_FACTORY
-        });
+        }));
 
 
 
@@ -133,7 +133,7 @@ contract DeployV2 is LZState {
             // .............. Send some tokens
             
             //set approval for adaptor to spend tokens
-            mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
+            mocaToken.approve(address(mocaTokenAdaptor), 1e18);
 
             // send params
             SendParam memory sendParam = SendParam({

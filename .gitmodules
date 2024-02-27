@@ -4,3 +4,6 @@
 [submodule "lib/solpretty"]
 	path = lib/solpretty
 	url = https://github.com/devtooligan/solpretty
+[submodule "lib/sphinx"]
+	path = lib/sphinx
+	url = https://github.com/sphinx-labs/sphinx
