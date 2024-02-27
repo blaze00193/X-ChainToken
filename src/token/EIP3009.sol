@@ -1,36 +1,36 @@
 /**
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: Apache-2.0
  *
- * Copyright (c) 2020 CENTRE SECZ
+ * Copyright (c) 2023, Circle Internet Financial, LLC.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * The above copyright notice and this permission notice shall be included in
- * copies or substantial portions of the Software.
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 pragma solidity ^0.8.20;
 
-import { IERC20Internal } from "./IERC20Internal.sol";
 import { EIP712Domain } from "./EIP712Domain.sol";
-import { EIP712 } from "./EIP712.sol";
 
-// newly added
+import { SignatureChecker } from "../utils/SignatureChecker.sol";
+import { MessageHashUtils } from "../utils/MessageHashUtils.sol";
+
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
+/**
+ * @title EIP-3009
+ * @notice Provide internal implementation for gas-abstracted transfers
+ * @dev Contracts that inherit from this must wrap these with publicly
+ * accessible functions, optionally adding modifiers where necessary
+ */
 abstract contract EIP3009 is ERC20, EIP712Domain {
     // keccak256("TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)")
     bytes32
@@ -45,19 +45,17 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
         public constant CANCEL_AUTHORIZATION_TYPEHASH = 0x158b0a9edf7a828aad02f63cd515c68ef2f50ba807396f6d12842833a1597429;
 
     /**
-     * @dev authorizer address => nonce => state (true = used / false = unused)
+     * @dev authorizer address => nonce => bool (true if nonce is used)
      */
-    mapping(address => mapping(bytes32 => bool)) internal _authorizationStates;
+    mapping(address => mapping(bytes32 => bool)) private _authorizationStates;
 
     event AuthorizationUsed(address indexed authorizer, bytes32 indexed nonce);
     event AuthorizationCanceled(address indexed authorizer, bytes32 indexed nonce);
 
-    string internal constant _INVALID_SIGNATURE_ERROR = "EIP3009: invalid signature";
-    string internal constant _AUTHORIZATION_USED_ERROR = "EIP3009: authorization is used";
-
     /**
      * @notice Returns the state of an authorization
-     * @dev Nonces are randomly generated 32-byte data unique to the authorizer's address
+     * @dev Nonces are randomly generated 32-byte data unique to the
+     * authorizer's address
      * @param authorizer    Authorizer's address
      * @param nonce         Nonce of the authorization
      * @return True if the nonce is used
@@ -78,88 +76,7 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
      * @param r             r of the signature
      * @param s             s of the signature
      */
-    function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, uint8 v, bytes32 r, bytes32 s) external {
-        _transferWithAuthorization(
-            TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
-            from,
-            to,
-            value,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
-    }
-
-    /**
-     * @notice Receive a transfer with a signed authorization from the payer
-     * @dev This has an additional check to ensure that the payee's address matches
-     * the caller of this function to prevent front-running attacks. (See security considerations)
-     * @param from          Payer's address (Authorizer)
-     * @param to            Payee's address
-     * @param value         Amount to be transferred
-     * @param validAfter    The time after which this is valid (unix time)
-     * @param validBefore   The time before which this is valid (unix time)
-     * @param nonce         Unique nonce
-     * @param v             v of the signature
-     * @param r             r of the signature
-     * @param s             s of the signature
-     */
-    function receiveWithAuthorization(
-        address from,
-        address to,
-        uint256 value,
-        uint256 validAfter,
-        uint256 validBefore,
-        bytes32 nonce,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        require(to == msg.sender, "EIP3009: caller must be the payee");
-
-        _transferWithAuthorization(
-            RECEIVE_WITH_AUTHORIZATION_TYPEHASH,
-            from,
-            to,
-            value,
-            validAfter,
-            validBefore,
-            nonce,
-            v,
-            r,
-            s
-        );
-    }
-
-    /**
-     * @notice Attempt to cancel an authorization
-     * @param authorizer    Authorizer's address
-     * @param nonce         Nonce of the authorization
-     * @param v             v of the signature
-     * @param r             r of the signature
-     * @param s             s of the signature
-     */
-    function cancelAuthorization(
-        address authorizer,
-        bytes32 nonce,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        require(!_authorizationStates[authorizer][nonce], _AUTHORIZATION_USED_ERROR);
-
-        bytes memory data = abi.encode(CANCEL_AUTHORIZATION_TYPEHASH, authorizer, nonce);
-        require(EIP712.recover(DOMAIN_SEPARATOR, v, r, s, data) == authorizer, _INVALID_SIGNATURE_ERROR);
-
-        _authorizationStates[authorizer][nonce] = true;
-        emit AuthorizationCanceled(authorizer, nonce);
-    }
-
     function _transferWithAuthorization(
-        bytes32 typeHash,
         address from,
         address to,
         uint256 value,
@@ -170,24 +87,231 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
         bytes32 r,
         bytes32 s
     ) internal {
-        require(block.timestamp > validAfter, "EIP3009: authorization is not yet valid");
-        require(block.timestamp < validBefore, "EIP3009: authorization is expired");
-        require(!_authorizationStates[from][nonce], _AUTHORIZATION_USED_ERROR);
-
-        bytes memory data = abi.encode(
-            typeHash,
+        _transferWithAuthorization(
             from,
             to,
             value,
             validAfter,
             validBefore,
-            nonce
+            nonce,
+            abi.encodePacked(r, s, v)
         );
-        require(EIP712.recover(DOMAIN_SEPARATOR, v, r, s, data) == from, _INVALID_SIGNATURE_ERROR);
+    }
 
-        _authorizationStates[from][nonce] = true;
-        emit AuthorizationUsed(from, nonce);
+    /**
+     * @notice Execute a transfer with a signed authorization
+     * @dev EOA wallet signatures should be packed in the order of r, s, v.
+     * @param from          Payer's address (Authorizer)
+     * @param to            Payee's address
+     * @param value         Amount to be transferred
+     * @param validAfter    The time after which this is valid (unix time)
+     * @param validBefore   The time before which this is valid (unix time)
+     * @param nonce         Unique nonce
+     * @param signature     Signature byte array produced by an EOA wallet or a contract wallet
+     */
+    function _transferWithAuthorization(
+        address from,
+        address to,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        bytes memory signature
+    ) internal {
+        _requireValidAuthorization(from, nonce, validAfter, validBefore);
+        _requireValidSignature(
+            from,
+            keccak256(
+                abi.encode(
+                    TRANSFER_WITH_AUTHORIZATION_TYPEHASH,
+                    from,
+                    to,
+                    value,
+                    validAfter,
+                    validBefore,
+                    nonce
+                )
+            ),
+            signature
+        );
 
+        _markAuthorizationAsUsed(from, nonce);
         _transfer(from, to, value);
+    }
+
+    /**
+     * @notice Receive a transfer with a signed authorization from the payer
+     * @dev This has an additional check to ensure that the payee's address
+     * matches the caller of this function to prevent front-running attacks.
+     * @param from          Payer's address (Authorizer)
+     * @param to            Payee's address
+     * @param value         Amount to be transferred
+     * @param validAfter    The time after which this is valid (unix time)
+     * @param validBefore   The time before which this is valid (unix time)
+     * @param nonce         Unique nonce
+     * @param v             v of the signature
+     * @param r             r of the signature
+     * @param s             s of the signature
+     */
+    function _receiveWithAuthorization(
+        address from,
+        address to,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        _receiveWithAuthorization(
+            from,
+            to,
+            value,
+            validAfter,
+            validBefore,
+            nonce,
+            abi.encodePacked(r, s, v)
+        );
+    }
+
+    /**
+     * @notice Receive a transfer with a signed authorization from the payer
+     * @dev This has an additional check to ensure that the payee's address
+     * matches the caller of this function to prevent front-running attacks.
+     * EOA wallet signatures should be packed in the order of r, s, v.
+     * @param from          Payer's address (Authorizer)
+     * @param to            Payee's address
+     * @param value         Amount to be transferred
+     * @param validAfter    The time after which this is valid (unix time)
+     * @param validBefore   The time before which this is valid (unix time)
+     * @param nonce         Unique nonce
+     * @param signature     Signature byte array produced by an EOA wallet or a contract wallet
+     */
+    function _receiveWithAuthorization(
+        address from,
+        address to,
+        uint256 value,
+        uint256 validAfter,
+        uint256 validBefore,
+        bytes32 nonce,
+        bytes memory signature
+    ) internal {
+        require(to == msg.sender, "FiatTokenV2: caller must be the payee");
+        _requireValidAuthorization(from, nonce, validAfter, validBefore);
+        _requireValidSignature(
+            from,
+            keccak256(
+                abi.encode(
+                    RECEIVE_WITH_AUTHORIZATION_TYPEHASH,
+                    from,
+                    to,
+                    value,
+                    validAfter,
+                    validBefore,
+                    nonce
+                )
+            ),
+            signature
+        );
+
+        _markAuthorizationAsUsed(from, nonce);
+        _transfer(from, to, value);
+    }
+
+    /**
+     * @notice Attempt to cancel an authorization
+     * @param authorizer    Authorizer's address
+     * @param nonce         Nonce of the authorization
+     * @param v             v of the signature
+     * @param r             r of the signature
+     * @param s             s of the signature
+     */
+    function _cancelAuthorization(
+        address authorizer,
+        bytes32 nonce,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal {
+        
+        _cancelAuthorization(authorizer, nonce, abi.encodePacked(r, s, v));
+    }
+
+    /**
+     * @notice Attempt to cancel an authorization
+     * @dev EOA wallet signatures should be packed in the order of r, s, v.
+     * @param authorizer    Authorizer's address
+     * @param nonce         Nonce of the authorization
+     * @param signature     Signature byte array produced by an EOA wallet or a contract wallet
+     */
+    function _cancelAuthorization(address authorizer, bytes32 nonce, bytes memory signature) internal {
+        _requireUnusedAuthorization(authorizer, nonce);
+        _requireValidSignature(
+            authorizer,
+            keccak256(
+                abi.encode(CANCEL_AUTHORIZATION_TYPEHASH, authorizer, nonce)
+            ),
+            signature
+        );
+
+        _authorizationStates[authorizer][nonce] = true;
+        emit AuthorizationCanceled(authorizer, nonce);
+    }
+
+    /**
+     * @notice Validates that signature against input data struct
+     * @param signer        Signer's address
+     * @param dataHash      Hash of encoded data struct
+     * @param signature     Signature byte array produced by an EOA wallet or a contract wallet
+     */
+    function _requireValidSignature(address signer, bytes32 dataHash, bytes memory signature) private view {
+        require(
+            SignatureChecker.isValidSignatureNow(
+                signer,
+                MessageHashUtils.toTypedDataHash(_domainSeparator(), dataHash),
+                signature
+            ),
+            "FiatTokenV2: invalid signature"
+        );
+    }
+
+    /**
+     * @notice Check that an authorization is unused
+     * @param authorizer    Authorizer's address
+     * @param nonce         Nonce of the authorization
+     */
+    function _requireUnusedAuthorization(address authorizer, bytes32 nonce) private view {
+        require(!_authorizationStates[authorizer][nonce], "FiatTokenV2: authorization is used or canceled");
+    }
+
+    /**
+     * @notice Check that authorization is valid
+     * @param authorizer    Authorizer's address
+     * @param nonce         Nonce of the authorization
+     * @param validAfter    The time after which this is valid (unix time)
+     * @param validBefore   The time before which this is valid (unix time)
+     */
+    function _requireValidAuthorization(
+        address authorizer,
+        bytes32 nonce,
+        uint256 validAfter,
+        uint256 validBefore
+    ) private view {
+
+        require(block.timestamp > validAfter, "FiatTokenV2: authorization is not yet valid");
+        require(block.timestamp < validBefore, "FiatTokenV2: authorization is expired");
+        
+        _requireUnusedAuthorization(authorizer, nonce);
+    }
+
+    /**
+     * @notice Mark an authorization as used
+     * @param authorizer    Authorizer's address
+     * @param nonce         Nonce of the authorization
+     */
+    function _markAuthorizationAsUsed(address authorizer, bytes32 nonce) private {
+        _authorizationStates[authorizer][nonce] = true;
+        emit AuthorizationUsed(authorizer, nonce);
     }
 }
