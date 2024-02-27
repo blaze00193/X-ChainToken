@@ -12,7 +12,7 @@ import { IOAppOptionsType3, EnforcedOptionParam } from "node_modules/@layerzerol
 import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
-abstract contract LZState is Sphinx {
+abstract contract LZState is Sphinx, Script {
     
     //Note: LZV2 testnet addresses
 
