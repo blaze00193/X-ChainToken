@@ -123,34 +123,36 @@ contract DeployV2 is LZState {
             EnforcedOptionParam memory enforcedOptionParam;
             // msgType:1 -> a standard token transfer via send()
             // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
-            enforcedOptionParam = EnforcedOptionParam({eid: remoteChainID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
+            enforcedOptionParam = EnforcedOptionParam({eid: remoteChainID, msgType: 1, options: hex"00030100110100000000000000000000000000030d40"});
         
             EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
-            enforcedOptionParams[0] = enforcedOptionParam;
+            enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
 
             mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
             // .............. Send some tokens
             
             //set approval for adaptor to spend tokens
-            mocaToken.approve(address(mocaTokenAdaptor), 1e18);
+            mocaToken.approve(address(mocaTokenAdaptor), 10 ether);
+            mocaToken.mint(10 ether);
 
             // send params
+            bytes memory nullBytes = new bytes(0);
             SendParam memory sendParam = SendParam({
                 dstEid: remoteChainID,
                 to: bytes32(uint256(uint160(address(msg.sender)))),
-                amountLD: 1e18,
-                minAmountLD: 1e18,
-                extraOptions: '0x',
-                composeMsg: '0x',
-                oftCmd: '0x'
+                amountLD: 1 ether,
+                minAmountLD: 1 ether,
+                extraOptions: nullBytes,
+                composeMsg: nullBytes,
+                oftCmd: nullBytes
             });
 
             // Fetching the native fee for the token send operation
             MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
 
             // send tokens xchain
-            mocaTokenAdaptor.send(sendParam, messagingFee, payable(msg.sender));
+            mocaTokenAdaptor.send{value: (messagingFee.nativeFee * 2) }(sendParam, messagingFee, payable(msg.sender));
 
 
         } else if (block.chainid == 421614) { // Remote
@@ -163,13 +165,14 @@ contract DeployV2 is LZState {
 
             //............ Set gasLimits on Remote
 
-              EnforcedOptionParam memory enforcedOptionParam;
+            EnforcedOptionParam memory enforcedOptionParam;
             // msgType:1 -> a standard token transfer via send()
             // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
             enforcedOptionParam = EnforcedOptionParam({eid: homeChainID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
             
             EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
-            enforcedOptionParams[0] = enforcedOptionParam;
+
+            enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
 
             mocaOFT.setEnforcedOptions(enforcedOptionParams);      
 
