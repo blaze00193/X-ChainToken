@@ -122,9 +122,7 @@ contract DeployV2 is LZState {
 
             EnforcedOptionParam memory enforcedOptionParam;
             // msgType:1 -> a standard token transfer via send()
-            // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
-            enforcedOptionParam = EnforcedOptionParam({eid: remoteChainID, msgType: 1, options: hex"00030100110100000000000000000000000000030d40"});
-        
+            // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
             EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
             enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
 
@@ -133,8 +131,7 @@ contract DeployV2 is LZState {
             // .............. Send some tokens
             
             //set approval for adaptor to spend tokens
-            mocaToken.approve(address(mocaTokenAdaptor), 10 ether);
-            mocaToken.mint(10 ether);
+            mocaToken.approve(address(mocaTokenAdaptor), 1 ether);
 
             // send params
             bytes memory nullBytes = new bytes(0);
@@ -168,10 +165,7 @@ contract DeployV2 is LZState {
             EnforcedOptionParam memory enforcedOptionParam;
             // msgType:1 -> a standard token transfer via send()
             // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
-            enforcedOptionParam = EnforcedOptionParam({eid: homeChainID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
-            
             EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
-
             enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
 
             mocaOFT.setEnforcedOptions(enforcedOptionParams);      
