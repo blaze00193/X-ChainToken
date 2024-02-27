@@ -152,7 +152,7 @@ contract DeployV2 is LZState {
             MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
 
             // send tokens xchain
-            mocaTokenAdaptor.send{value: messagingFee.nativeFee }(sendParam, messagingFee, payable(msg.sender));
+            mocaTokenAdaptor.send{value: (messagingFee.nativeFee * 2) }(sendParam, messagingFee, payable(msg.sender));
 
 
         } else if (block.chainid == 421614) { // Remote
