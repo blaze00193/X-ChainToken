@@ -20,11 +20,11 @@ abstract contract LZState {
     uint16 public arbSepoliaID = 40231;
     address public arbSepoliaEP = 0x6EDCE65403992e310A62460808c4b910D972f10f;
 
-    uint16 homeChainID = mumbaiID;
-    address homeLzEP = mumbaiEP;
+    uint16 homeChainID = sepoliaID;
+    address homeLzEP = sepoliaEP;
 
-    uint16 remoteChainID = arbSepoliaID;
-    address remoteLzEP = arbSepoliaEP;
+    uint16 remoteChainID = mumbaiID;
+    address remoteLzEP = mumbaiEP;
 }
 
 //Note: Deploy token + adaptor
@@ -73,30 +73,30 @@ contract DeployElsewhere is Script, LZState {
         address delegate = msg.sender;
         address owner = msg.sender;
 
-        MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, delegate, owner);
+        MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db);
         vm.stopBroadcast();
     }
 }
 
-//forge script script/Deploy.s.sol:DeployElsewhere --rpc-url goerli --broadcast --verify -vvvv --etherscan-api-key goerli
+// forge script script/Deploy.s.sol:DeployElsewhere --rpc-url polygon_mumbai --broadcast --verify -vvvv --etherscan-api-key polygon_mumbai
 
 
 //------------------------------ SETUP ------------------------------------
 
 abstract contract State is LZState {
-
-    address public mocaTokenAddress = address(0);    
-    address public mocaTokenAdaptorAddress = address(0);                     
+    
+    // home
+    address public mocaTokenAddress = address(0x9cb6dc4B71E285e26cbb0605F94B4031fE04C72c);    
+    address public mocaTokenAdaptorAddress = address(0x4114eCCadF3b248DA9EEe7D8dF2d3bA6bB02Cbcd);                     
 
     // remote
-    address public mocaOFTAddress = address(0);
+    address public mocaOFTAddress = address(0x8BB305DF680edA14E6b25b975Bf1a8831AcF69ab);
 
     // set contracts
     MocaToken public mocaToken = MocaToken(mocaTokenAddress);
     MocaTokenAdaptor public mocaTokenAdaptor = MocaTokenAdaptor(mocaTokenAdaptorAddress);
 
     MocaOFT public mocaOFT = MocaOFT(mocaOFTAddress);
-
 }
 
 
@@ -135,7 +135,7 @@ contract SetRemoteOnAway is State, Script {
     }
 }
 
-// forge script script/Deploy.s.sol:SetRemoteOnAway --rpc-url goerli --broadcast -vvvv
+// forge script script/Deploy.s.sol:SetRemoteOnAway --rpc-url polygon_mumbai --broadcast -vvvv
 
 
 // ------------------------------------------- Gas Limits -------------------------
@@ -150,11 +150,9 @@ contract SetGasLimitsHome is State, Script {
 
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
-        // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
-        enforcedOptionParam = EnforcedOptionParam({eid: remoteChainID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
-    
+        // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
         EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
-        enforcedOptionParams[0] = enforcedOptionParam;
+        enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
 
         mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
@@ -174,10 +172,8 @@ contract SetGasLimitsAway is State, Script {
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
-        enforcedOptionParam = EnforcedOptionParam({eid: homeChainID, msgType: 1, options: "0x00030100110100000000000000000000000000030d40"});
-        
         EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
-        enforcedOptionParams[0] = enforcedOptionParam;
+        enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
@@ -185,7 +181,7 @@ contract SetGasLimitsAway is State, Script {
     }
 }
 
-// forge script script/Deploy.s.sol:SetGasLimitsAway --rpc-url goerli --broadcast -vvvv
+// forge script script/Deploy.s.sol:SetGasLimitsAway --rpc-url polygon_mumbai --broadcast -vvvv
 
 
 // ------------------------------------------- Send sum tokens  -------------------------
@@ -196,7 +192,6 @@ import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/
 
 contract SendTokensToAway is State, Script {
 
-
     function run() public {
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -206,21 +201,22 @@ contract SendTokensToAway is State, Script {
         mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
 
         
+        bytes memory nullBytes = new bytes(0);
         SendParam memory sendParam = SendParam({
             dstEid: remoteChainID,
-            to: bytes32(uint256(uint160(address(msg.sender)))),
-            amountLD: 1e18,
-            minAmountLD: 1e18,
-            extraOptions: '0x',
-            composeMsg: '0x',
-            oftCmd: '0x'
+            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),
+            amountLD: 1 ether,
+            minAmountLD: 1 ether,
+            extraOptions: nullBytes,
+            composeMsg: nullBytes,
+            oftCmd: nullBytes
         });
 
         // Fetching the native fee for the token send operation
         MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
 
         // send tokens xchain
-        mocaTokenAdaptor.send(sendParam, messagingFee, payable(msg.sender));
+        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db ));
 
         vm.stopBroadcast();
     }

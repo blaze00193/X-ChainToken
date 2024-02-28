@@ -35,7 +35,7 @@ library SignatureChecker {
      * @param digest        Keccak-256 hash digest of the signed message
      * @param signature     Signature byte array associated with hash
      */
-    function isValidSignatureNow(address signer, bytes32 digest, bytes memory signature) external view returns (bool) {
+    function isValidSignatureNow(address signer, bytes32 digest, bytes memory signature) internal view returns (bool) {
         if (!isContract(signer)) {
             return ECRecover.recover(digest, signature) == signer;
         }

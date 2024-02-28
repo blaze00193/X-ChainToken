@@ -115,9 +115,9 @@ contract Deploy is Script, LZState {
                 to: bytes32(uint256(uint160(address(msg.sender)))),
                 amountLD: 1e18,
                 minAmountLD: 1e18,
-                extraOptions: '0x',
-                composeMsg: '0x',
-                oftCmd: '0x'
+                extraOptions: hex"00",
+                composeMsg: hex"00",
+                oftCmd: hex"00"
             });
 
             // Fetching the native fee for the token send operation
