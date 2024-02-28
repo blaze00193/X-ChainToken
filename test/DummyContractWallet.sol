@@ -1,30 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {MocaToken} from "./../src/token/MocaToken.sol";
-
-contract MocaTokenMock is MocaToken {
+contract DummyContractWallet {
 
     // bytes4(keccak256("isValidSignature(bytes32,bytes)")
     bytes4 constant internal MAGICVALUE = 0x1626ba7e;
     address immutable public owner;
     
-    constructor(string memory name, string memory symbol, address treasury) MocaToken(name, symbol, treasury) {
+    constructor() {
         owner = msg.sender;
     }   
 
-
-    function mint(uint256 amount) public {
-        _mint(msg.sender, amount);
-    }
-
-    // _hash: hash of the message being signed
-    // _signature: bytes array containing the signature data
+    // _hash: hash of the message being signed _> digest
+    // _signature: bytes array containing the signature data -> signature
     // returns magic value if signer == owner
     function isValidSignature(bytes32 _hash, bytes memory _signature) public view returns (bytes4 magicValue) {
 
-        bytes32 messageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash));
-        address signer = recoverSigner(messageHash, _signature);
+        address signer = recoverSigner(_hash, _signature);
 
         if (signer == address(0)) {
             return 0x00000000;
@@ -45,9 +37,9 @@ contract MocaTokenMock is MocaToken {
         }
 
         assembly {
-            r := mload(add(signature, 32))
-            s := mload(add(signature, 64))
-            v := byte(0, mload(add(signature, 96)))
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := byte(0, mload(add(signature, 0x60)))
         }
 
         if (v < 27) {

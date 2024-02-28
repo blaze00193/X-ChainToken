@@ -45,6 +45,28 @@ contract MocaToken is EIP3009 {
     }
 
     /**
+     * @notice Execute a transfer with a signed authorization
+     * @param from          Payer's address (Authorizer)
+     * @param to            Payee's address
+     * @param value         Amount to be transferred
+     * @param validAfter    The time after which this is valid (unix time)
+     * @param validBefore   The time before which this is valid (unix time)
+     * @param nonce         Unique nonce
+     * @param signature     Signature byte array produced by an EOA wallet or a contract wallet
+     */
+    function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, bytes memory signature) external {
+        _transferWithAuthorization(
+            from,
+            to,
+            value,
+            validAfter,
+            validBefore,
+            nonce,
+            signature
+        );
+    }
+
+    /**
      * @notice Attempt to cancel an authorization
      * @dev Works only if the authorization is not yet used.
      * EOA wallet signatures should be packed in the order of r, s, v.
@@ -114,6 +136,8 @@ totalSupply = 8,888,888,888
  no mint function
  mint entire supply in constructor
  token contract should be renounced and non-upgradable
+  there is no ownable to renounce.
+  token is
 
 Note:
 

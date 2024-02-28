@@ -267,13 +267,8 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
      */
     function _requireValidSignature(address signer, bytes32 dataHash, bytes memory signature) private view {
         require(
-            SignatureChecker.isValidSignatureNow(
-                signer,
-                MessageHashUtils.toTypedDataHash(_domainSeparator(), dataHash),
-                signature
-            ),
-            "FiatTokenV2: invalid signature"
-        );
+            SignatureChecker.isValidSignatureNow(signer, MessageHashUtils.toTypedDataHash(_domainSeparator(), dataHash), signature), 
+            "FiatTokenV2: invalid signature");
     }
 
     /**

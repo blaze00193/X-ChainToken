@@ -52,11 +52,7 @@ library SignatureChecker {
      * NOTE: Unlike ECDSA signatures, contract signatures are revocable, and the outcome of this function can thus
      * change through time. It could return true at block N and false at block N+1 (or the opposite).
      */
-    function isValidERC1271SignatureNow(
-        address signer,
-        bytes32 digest,
-        bytes memory signature
-    ) internal view returns (bool) {
+    function isValidERC1271SignatureNow(address signer, bytes32 digest, bytes memory signature) internal view returns (bool) {
         (bool success, bytes memory result) = signer.staticcall(
             abi.encodeWithSelector(
                 IERC1271.isValidSignature.selector,
@@ -64,10 +60,7 @@ library SignatureChecker {
                 signature
             )
         );
-        return (success &&
-            result.length >= 32 &&
-            abi.decode(result, (bytes32)) ==
-            bytes32(IERC1271.isValidSignature.selector));
+        return (success && result.length >= 32 && abi.decode(result, (bytes32)) == bytes32(IERC1271.isValidSignature.selector));
     }
 
     /**
