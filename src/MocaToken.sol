@@ -3,7 +3,7 @@ pragma solidity ^0.8.22;
 
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { EIP3009 } from "./EIP3009.sol";
-import { EIP712 } from "./../utils/EIP712.sol";
+import { EIP712 } from "./utils/EIP712.sol";
 
 contract MocaToken is EIP3009 {
 
@@ -41,28 +41,6 @@ contract MocaToken is EIP3009 {
             v,
             r,
             s
-        );
-    }
-
-    /**
-     * @notice Execute a transfer with a signed authorization
-     * @param from          Payer's address (Authorizer)
-     * @param to            Payee's address
-     * @param value         Amount to be transferred
-     * @param validAfter    The time after which this is valid (unix time)
-     * @param validBefore   The time before which this is valid (unix time)
-     * @param nonce         Unique nonce
-     * @param signature     Signature byte array produced by an EOA wallet or a contract wallet
-     */
-    function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, bytes memory signature) external {
-        _transferWithAuthorization(
-            from,
-            to,
-            value,
-            validAfter,
-            validBefore,
-            nonce,
-            signature
         );
     }
 

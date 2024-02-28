@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Script, console2} from "forge-std/Script.sol";
 
-import {MocaToken} from "./../src/MocaToken.sol";
+import {MocaTokenMock} from "./../test/MocaTokenMock.sol";
 import {MocaOFT} from "./../src/MocaOFT.sol";
 import {MocaTokenAdaptor} from "./../src/MocaTokenAdaptor.sol";
 
@@ -38,26 +38,20 @@ contract DeployHome is Script, LZState {
         // mint supply to treasury
         string memory name = "TestToken"; 
         string memory symbol = "TT";
-        address treasury = msg.sender;
-        MocaToken mocaToken = new MocaToken(name, symbol, treasury);
+        address treasury = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
+        MocaTokenMock mocaToken = new MocaTokenMock(name, symbol, treasury);
         
         // set msg.sender as delegate and owner
-        address deletate = msg.sender;
-        address owner = msg.sender;
+        address deletate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
+        address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         MocaTokenAdaptor mocaTokenAdaptor = new MocaTokenAdaptor(address(mocaToken), homeLzEP, deletate, owner);
 
         vm.stopBroadcast();
     }
 }
 
-
-/**
-    forge script script/Deploy.s.sol:DeployHome --rpc-url sepolia --broadcast --verify -vvvv --etherscan-api-key sepolia
+// forge script script/DeployMock.s.sol:DeployHome --rpc-url sepolia --broadcast --verify -vvvv --etherscan-api-key sepolia
     
-    backup RPC:
-    forge script script/Deploy.s.sol:DeployHome --rpc-url "https://rpc-mumbai.maticvigil.com" --broadcast --verify -vvvv --legacy --etherscan-api-key polygon
-*/
-
 
 //Note: Deploy OFT on remote
 contract DeployElsewhere is Script, LZState {
@@ -70,15 +64,15 @@ contract DeployElsewhere is Script, LZState {
         //params
         string memory name = "TestToken"; 
         string memory symbol = "TT";
-        address delegate = msg.sender;
-        address owner = msg.sender;
+        address delegate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
+        address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
 
-        MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db);
+        MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, delegate, owner);
         vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:DeployElsewhere --rpc-url polygon_mumbai --broadcast --verify -vvvv --etherscan-api-key polygon_mumbai
+// forge script script/DeployMock.s.sol:DeployElsewhere --rpc-url polygon_mumbai --broadcast --verify -vvvv --etherscan-api-key polygon_mumbai
 
 
 //------------------------------ SETUP ------------------------------------
@@ -86,14 +80,14 @@ contract DeployElsewhere is Script, LZState {
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0x9cb6dc4B71E285e26cbb0605F94B4031fE04C72c);    
-    address public mocaTokenAdaptorAddress = address(0x4114eCCadF3b248DA9EEe7D8dF2d3bA6bB02Cbcd);                     
+    address public mocaTokenAddress = address(0xD70eE3ee58394D5daC6Ccc05Bb917081a5CE2ab1);    
+    address public mocaTokenAdaptorAddress = address(0xC8011cB9cfCa55b822E56DD048dc960aBd6424Ce);                     
 
     // remote
-    address public mocaOFTAddress = address(0x8BB305DF680edA14E6b25b975Bf1a8831AcF69ab);
+    address public mocaOFTAddress = address(0x7d7b79b59Ffb5c684a8baD8fB1729AAA27883DDe);
 
     // set contracts
-    MocaToken public mocaToken = MocaToken(mocaTokenAddress);
+    MocaTokenMock public mocaToken = MocaTokenMock(mocaTokenAddress);
     MocaTokenAdaptor public mocaTokenAdaptor = MocaTokenAdaptor(mocaTokenAdaptorAddress);
 
     MocaOFT public mocaOFT = MocaOFT(mocaOFTAddress);
@@ -117,7 +111,7 @@ contract SetRemoteOnHome is State, Script {
     }
 }
 
-// forge script script/Deploy.s.sol:SetRemoteOnHome --rpc-url sepolia --broadcast -vvvv
+// forge script script/DeployMock.s.sol:SetRemoteOnHome --rpc-url sepolia --broadcast -vvvv
 
 contract SetRemoteOnAway is State, Script {
 
@@ -135,7 +129,7 @@ contract SetRemoteOnAway is State, Script {
     }
 }
 
-// forge script script/Deploy.s.sol:SetRemoteOnAway --rpc-url polygon_mumbai --broadcast -vvvv
+// forge script script/DeployMock.s.sol:SetRemoteOnAway --rpc-url polygon_mumbai --broadcast -vvvv
 
 
 // ------------------------------------------- Gas Limits -------------------------
@@ -160,7 +154,7 @@ contract SetGasLimitsHome is State, Script {
     }
 }
 
-// forge script script/Deploy.s.sol:SetGasLimitsHome --rpc-url sepolia --broadcast -vvvv
+// forge script script/DeployMock.s.sol:SetGasLimitsHome --rpc-url sepolia --broadcast -vvvv
 
 
 contract SetGasLimitsAway is State, Script {
@@ -181,7 +175,7 @@ contract SetGasLimitsAway is State, Script {
     }
 }
 
-// forge script script/Deploy.s.sol:SetGasLimitsAway --rpc-url polygon_mumbai --broadcast -vvvv
+// forge script script/DeployMock.s.sol:SetGasLimitsAway --rpc-url polygon_mumbai --broadcast -vvvv
 
 
 // ------------------------------------------- Send sum tokens  -------------------------
@@ -223,51 +217,3 @@ contract SendTokensToAway is State, Script {
 }
 
 //  forge script script/Deploy.s.sol:SendTokensToAway --rpc-url sepolia --broadcast -vvvv
-
-
-/*
-contract SendTokensToAwayAndCall is State, Script {
-
-    struct LzCallParams {
-        address payable refundAddress;
-        address zroPaymentAddress;
-        bytes adapterParams;
-    }
-
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
-        TestToken testToken = TestToken(homeChainTokenContract);
-
-        // defaultAdapterParams: min/max gas?
-        bytes memory defaultAdapterParams = abi.encodePacked(uint16(1), uint256(200000));
-
-        //payload and gas
-        bytes memory _payload = abi.encodeWithSignature("setApprovalForAll(address,bool)", msg.sender, true);
-        uint64 _dstGasForCall = 200000;
-
-        // let nativeFee = (await localOFT.estimateSendFee(remoteChainId, bobAddressBytes32, initialAmount, false, defaultAdapterParams)).nativeFee
-        (uint256 nativeFee, ) = testToken.estimateSendAndCallFee(goerliID, bytes32(uint256(uint160(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825))), 1e18, _payload, _dstGasForCall, false, defaultAdapterParams);
-        // sender sends tokens to himself on the remote chain
-        
-        // sender
-        address _from = 0x2BF003ec9B7e2a5A8663d6B0475370738FA39825;
-        // receiver
-        uint16 _dstChainId = goerliID;
-        bytes32 _toAddress = bytes32(uint256(uint160(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825)));
-        uint256 _amount = 1e18;
-        
-        ICommonOFT.LzCallParams memory _callParams;
-        _callParams = ICommonOFT.LzCallParams({refundAddress: payable(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825), zroPaymentAddress: address(0), adapterParams: defaultAdapterParams});
-
-        //testToken.sendFrom{value: nativeFee}(_from, _dstChainId, _toAddress, _amount, _callParams);
-        testToken.sendAndCall(_from, _dstChainId, _toAddress, _amount, _payload, _dstGasForCall, _callParams);
-
-        vm.stopBroadcast();
-    }
-}
-
-*/
-
-//  forge script script/Deploy.s.sol:SendTokensToAwayAndCall --rpc-url sepolia --broadcast -vvvv

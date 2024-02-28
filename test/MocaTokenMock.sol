@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {MocaToken} from "./../src/token/MocaToken.sol";
+import {MocaToken} from "./../src/MocaToken.sol";
 
 contract MocaTokenMock is MocaToken {
 

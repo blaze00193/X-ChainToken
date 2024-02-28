@@ -4,9 +4,9 @@ pragma solidity ^0.8.20;
 import {Script, console2} from "forge-std/Script.sol";
 import {Sphinx, Network} from "@sphinx-labs/contracts/SphinxPlugin.sol";
 
-import {MocaToken} from "./../src/token/MocaToken.sol";
-import {MocaOFT} from "./../src/token/MocaOFT.sol";
-import {MocaTokenAdaptor} from "./../src/token/MocaTokenAdaptor.sol";
+import {MocaToken} from "./../src/MocaToken.sol";
+import {MocaOFT} from "./../src/MocaOFT.sol";
+import {MocaTokenAdaptor} from "./../src/MocaTokenAdaptor.sol";
 
 import { IOAppOptionsType3, EnforcedOptionParam } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/interfaces/IOAppOptionsType3.sol";
 import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";

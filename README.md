@@ -1,24 +1,23 @@
-# Setup
+# Background
 
-forge init
-copy package.json
-forge test
-npm install
-update foundry.toml for remmapings
+1. EIP2621 is broken: https://www.trust-security.xyz/post/permission-denied
+2. We want to still offer gasless transaction for our users.
+3. Solution: EIP3009
 
-## Sphinx
+EIP3009 has been successfully used by Circle, in its USDC implementation since v1. This offers us a degree of confidence.
 
-- Install Sphinx CLI: `npm install --save-dev @sphinx-labs/plugins`
-- Install Sphinx Foundry fork: `npx sphinx install`
-- Update .gitignore: `node_modules/`
-- Add remapping: `@sphinx-labs/contracts/=lib/sphinx/packages/contracts/contracts/foundry`
-- Update your deployment script
-- propose:`npx sphinx propose script/DeploySphinx.s.sol --networks testnets --tc ContractName`
+EIP3009.sol and its dependencies were taken from the repo linked below.
 
+- They were initially built with solidity version 0.6; we have updated them to 0.8.
+- As part of the update, the only refactoring done was changing `now` to `block.timestamp`.
+- Additionally, EIP3009.sol now inherits ERC20.sol (from OpenZeppelin V5).
+- EIP3009.sol used to inherit AbstractFiatTokenV2 - it no longer does.
+- Reference to AbstractFiatTokenV2 and AbstractFiatTokenV1 were dropped.
 
-# Questions
+src: https://etherscan.deth.net/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48#code
 
-- now that I have deployed these bunch of contracts, across mumbai and arb_sepolia, are they all operating from the same gnosis safe?
-- how to continue to script through that safe in the future? (esp. after multiple iterations/deployments)
-- reject deployment: cos' i used the wrong signer (phantom -> MM). Just redo and overwrrite?
-- 
+## Setup
+
+- forge install
+- npm install
+
