@@ -14,7 +14,6 @@ contract MocaToken is EIP3009 {
         _DEPRECATED_CACHED_DOMAIN_SEPARATOR = EIP712.makeDomainSeparator(name, _version);
 
         _mint(treasury, (8_888_888_888 * 1e18));
-
     }
 
 
@@ -99,26 +98,3 @@ contract MocaToken is EIP3009 {
     }
 
 }
-
-
-
-
-/**
-name = Moca
-symbol = MOCA
-dp = 18
-
-totalSupply = 8,888,888,888
-
- no burn function
- no mint function
- mint entire supply in constructor
- token contract should be renounced and non-upgradable
-  there is no ownable to renounce.
-  token is
-
-Note:
-
-- do we need increaseAllowance/decreaseAllowance?
-- pausable modifier on cancelAuthorization? or anywhere else?
-*/
