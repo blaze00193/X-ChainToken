@@ -50,15 +50,6 @@ Both EOA and Smart contract wallets signatures (EIP1271) are supported.
 
 >Note that neither `increaseAllowance` nor `decreaseAllowance ` were implemented
 
-### Integration
-
-Looking at the test file MocaTokenTest.t.sol will give a clearer picture on the execution process, with respect to integration.
-
-Note that DummyContractWallet.sol serves as an example of a smart contract wallet as part of testing support for EIP1271.
-It's implementation of `isValidSignature` should be referenced.
-
-If a smart contract wallet implements `isValidSignature` differently, the signature verification will fail.
-
 ## MocaTokenAdaptor Contract
 
 Since we have opted to not natively deploy the token with LZ, the MocaTokenAdaptor contract will have to be deployed on the home chain alongside the MocaToken contract.
@@ -94,3 +85,31 @@ V2: DeployMock.s.sol (has unrestricted mint function)
 For those that want to play out, use the set of contracts as part of the V2 deployment as MocaToken has an unrestricted public mint function.
 
 V1 does not, and is meant to reflect how an actual deployment would be.
+
+## Integration
+
+### Crafting signatures
+
+Looking at the test file MocaTokenTest.t.sol will give a clearer picture on the execution process, with respect to integration.
+
+Note that DummyContractWallet.sol serves as an example of a smart contract wallet as part of testing support for EIP1271.
+It's implementation of `isValidSignature` should be referenced.
+
+If a smart contract wallet implements `isValidSignature` differently, the signature verification will fail.
+
+### Crafting LZ params
+
+Looking at Deploy.s.sol, contract `SendTokensToAway` will give you an idea what params need to be crafted before calling `mocaTokenAdaptor.send` to bridge.
+Essentially its a 2-step process,
+
+1. Call `mocaTokenAdaptor.quoteSend(sendParam, false)`
+2. Call `mocaTokenAdaptor.send(.....)`
+
+The first calls the layerZero endpoint contract on the same chain to get a gas cost quote for the specified bridging action. This value (or slightly more) must be passed as `msg.value` as part of the 2nd call.
+
+As part of the deployment process I have enforced that users to pay a minimum of 200000 wei on the source chain. This is because a standard `lzReceive` call and token transfer on the destination chain should add up to be about that much on most EVM chains.
+
+**For more details:**
+
+- https://docs.layerzero.network/contracts/oft#estimating-gas-fees
+- https://docs.layerzero.network/contracts/oft#calling-send
