@@ -111,5 +111,13 @@ As part of the deployment process I have enforced that users to pay a minimum of
 
 **For more details:**
 
-- https://docs.layerzero.network/contracts/oft#estimating-gas-fees
-- https://docs.layerzero.network/contracts/oft#calling-send
+- [OFT: Estimating-gas-fees](https://docs.layerzero.network/contracts/oft#estimating-gas-fees)
+- [OFT: Calling-send](https://docs.layerzero.network/contracts/oft#calling-send)
+
+- [Message Execution Options](https://docs.layerzero.network/contracts/options)
+- [Estimating Gas Fees](https://docs.layerzero.network/contracts/estimating-gas-fees)
+- [Transaction Pricing](https://docs.layerzero.network/contracts/transaction-pricing)
+
+The DevTools repo is especially useful for reference examples:
+
+- [devtools](https://github.com/LayerZero-Labs/devtools/?tab=readme-ov-file#bootstrapping-an-example-cross-chain-project)
