@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Script, console2} from "forge-std/Script.sol";
 
-import {MocaTokenMock} from "./../test/MocaTokenMock.sol";
+import {MocaTokenMock} from "./../test/mocks/MocaTokenMock.sol";
 import {MocaOFT} from "./../src/MocaOFT.sol";
 import {MocaTokenAdaptor} from "./../src/MocaTokenAdaptor.sol";
 

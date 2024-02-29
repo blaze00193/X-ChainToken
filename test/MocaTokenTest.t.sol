@@ -3,8 +3,8 @@ pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {MocaTokenMock} from "./MocaTokenMock.sol";
-import {DummyContractWallet} from "./DummyContractWallet.sol";
+import {MocaTokenMock} from "./mocks/MocaTokenMock.sol";
+import {DummyContractWallet} from "./mocks/DummyContractWallet.sol";
 
 abstract contract StateDeployed is Test {
     
@@ -463,8 +463,8 @@ contract StateDeployedTest1271 is StateDeployed {
         assertEq(isTrue, true);
 
         // check that signature cannot be replayed
-        vm.prank(to);
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.prank(sender);
+        vm.expectRevert("FiatTokenV2: caller must be the payee");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call

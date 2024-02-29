@@ -121,3 +121,8 @@ As part of the deployment process I have enforced that users to pay a minimum of
 The DevTools repo is especially useful for reference examples:
 
 - [devtools](https://github.com/LayerZero-Labs/devtools/?tab=readme-ov-file#bootstrapping-an-example-cross-chain-project)
+
+# PENDING
+
+- setEnforcedParams gasLimits on sendAndCall (msgType: 2)
+- create scripts to break connection vs pausable

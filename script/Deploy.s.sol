@@ -153,6 +153,9 @@ contract SetGasLimitsHome is State, Script {
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
         EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
         enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
+        
+        // block sendAndCall
+        //enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex" ");
 
         mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
@@ -172,8 +175,10 @@ contract SetGasLimitsAway is State, Script {
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
-        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
+        // block sendAndCall
+        //enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex" ");
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
