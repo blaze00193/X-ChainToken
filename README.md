@@ -126,3 +126,9 @@ The DevTools repo is especially useful for reference examples:
 
 - setEnforcedParams gasLimits on sendAndCall (msgType: 2)
 - create scripts to break connection vs pausable
+
+# Contingency
+
+- off-chain monitoring of tokens bridged
+- disconnect bridge when source chain emits malicious/incorrect LzSend event
+-- what happens to the tokens on the src when you d/c the dst, after firing off on the src?
