@@ -20,7 +20,23 @@ contract MocaTokenAdaptor is OFTAdapter, Pausable {
     }
 
 
+    /*//////////////////////////////////////////////////////////////
+                                PAUSABLE
+    //////////////////////////////////////////////////////////////*/
+    
+    /**
+     * @notice Pause contract
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
 
+    /**
+     * @notice Unpause contract
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 
 }
 

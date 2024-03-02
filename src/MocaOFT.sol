@@ -2,6 +2,7 @@
 pragma solidity ^0.8.22;
 
 import "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFT.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 import { EIP3009 } from "./EIP3009.sol";
@@ -9,7 +10,7 @@ import { EIP712 } from "./utils/EIP712.sol";
 
 //Note: To be deployed everywhere else, outside of the home chain
 //      18 dp
-contract MocaOFT is OFT, EIP3009 {
+contract MocaOFT is OFT, EIP3009, Pausable {
 
     string internal constant _version = "v1";
 
@@ -27,6 +28,12 @@ contract MocaOFT is OFT, EIP3009 {
         _DEPRECATED_CACHED_DOMAIN_SEPARATOR = EIP712.makeDomainSeparator(_name, _version);
     }
 
+
+    /*//////////////////////////////////////////////////////////////
+                                EIP3009
+    //////////////////////////////////////////////////////////////*/
+
+    
     /**
      * @notice Execute a transfer with a signed authorization
      * @param from          Payer's address (Authorizer)
@@ -107,7 +114,22 @@ contract MocaOFT is OFT, EIP3009 {
         );
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                PAUSABLE
+    //////////////////////////////////////////////////////////////*/
 
+    /**
+     * @notice Pause contract
+     */
+    function pause() external onlyOwner {
+        _pause();
+    }
 
+    /**
+     * @notice Unpause contract
+     */
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 
 }
