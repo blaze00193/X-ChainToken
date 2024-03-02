@@ -43,7 +43,7 @@ but destination is ordered receival.
 
 - bot reading events to ensure supply not exceeded
 - sound alert, pause
-- what if we have our own DVN? i don't think ti helps in this instance
+- what if we have our own DVN? i don't think it helps in this instance
 
 ### Emergency
 

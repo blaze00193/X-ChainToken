@@ -16,7 +16,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  */
 abstract contract EIP3009 is ERC20, EIP712Domain {
     // keccak256("TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)")
-    bytes32
+    bytes32 
         public constant TRANSFER_WITH_AUTHORIZATION_TYPEHASH = 0x7c7c6cdb67a18743f49ec6fa9b35f50d52ed05cbed4cc592e13b44501c1a2267;
 
     // keccak256("ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)")
@@ -37,8 +37,7 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
 
     /**
      * @notice Returns the state of an authorization
-     * @dev Nonces are randomly generated 32-byte data unique to the
-     * authorizer's address
+     * @dev Nonces are randomly generated 32-byte data unique to the authorizer's address
      * @param authorizer    Authorizer's address
      * @param nonce         Nonce of the authorization
      * @return True if the nonce is used
@@ -180,7 +179,7 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
         bytes32 nonce,
         bytes memory signature
     ) internal {
-        require(to == msg.sender, "FiatTokenV2: caller must be the payee");
+        require(to == msg.sender, "Caller must be the payee");
         _requireValidAuthorization(from, nonce, validAfter, validBefore);
         _requireValidSignature(
             from,
@@ -251,7 +250,7 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
     function _requireValidSignature(address signer, bytes32 dataHash, bytes memory signature) private view {
         require(
             SignatureChecker.isValidSignatureNow(signer, MessageHashUtils.toTypedDataHash(_domainSeparator(), dataHash), signature), 
-            "FiatTokenV2: invalid signature");
+            "Invalid signature");
     }
 
     /**
@@ -260,7 +259,7 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
      * @param nonce         Nonce of the authorization
      */
     function _requireUnusedAuthorization(address authorizer, bytes32 nonce) private view {
-        require(!_authorizationStates[authorizer][nonce], "FiatTokenV2: authorization is used or canceled");
+        require(!_authorizationStates[authorizer][nonce], "Authorization is used or canceled");
     }
 
     /**
@@ -277,8 +276,8 @@ abstract contract EIP3009 is ERC20, EIP712Domain {
         uint256 validBefore
     ) private view {
 
-        require(block.timestamp > validAfter, "FiatTokenV2: authorization is not yet valid");
-        require(block.timestamp < validBefore, "FiatTokenV2: authorization is expired");
+        require(block.timestamp > validAfter, "Authorization is not yet valid");
+        require(block.timestamp < validBefore, "Authorization is expired");
         
         _requireUnusedAuthorization(authorizer, nonce);
     }

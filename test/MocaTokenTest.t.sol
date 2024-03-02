@@ -161,16 +161,16 @@ contract StateDeployedTest is StateDeployed {
 
 
         // check that signature cannot be replayed
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.cancelAuthorization(from, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call
         vm.prank(to);
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -212,16 +212,16 @@ contract StateDeployedTest is StateDeployed {
         assertEq(isTrue, true);
 
         // check that signature cannot be replayed
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.cancelAuthorization(from, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call
         vm.prank(to);
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
     }
 
@@ -268,14 +268,14 @@ contract StateDeployedTest is StateDeployed {
 
         // check that signature cannot be replayed
         vm.prank(to);
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
         // check that signature cannot be replayed on another fn call
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.cancelAuthorization(from, nonce, v, r, s);
     }
 
@@ -311,8 +311,22 @@ contract StateDeployedTest is StateDeployed {
         // execute gasless transfer. caller IS NOT payee. THIS SHOULD REVERT.
         
         vm.prank(treasury);
-        vm.expectRevert("FiatTokenV2: caller must be the payee");
+        vm.expectRevert("Caller must be the payee");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
+    }
+
+    function testSelfBurn(uint256 amount) public {
+        
+        uint256 initialBalance = mocaToken.balanceOf(treasury);
+        assertGe(initialBalance, 0);
+        
+        vm.assume(amount >= 1 ether);
+        vm.assume(amount <= initialBalance);
+
+        vm.prank(treasury);
+        mocaToken.burn(amount);
+
+        assertEq(mocaToken.balanceOf(treasury), initialBalance - amount);
     }
 }
 
@@ -362,15 +376,15 @@ contract StateDeployedTest1271 is StateDeployed {
 
 
         // check that signature cannot be replayed
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.cancelAuthorization(from, nonce, v, r, s);
         // check that signature cannot be replayed on another fn call
         vm.prank(to);
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
 
     }
@@ -410,15 +424,15 @@ contract StateDeployedTest1271 is StateDeployed {
         assertEq(isTrue, true);
 
         // check that signature cannot be replayed
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.cancelAuthorization(from, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
         // check that signature cannot be replayed on another fn call
         vm.prank(to);
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
 
     }
@@ -464,14 +478,14 @@ contract StateDeployedTest1271 is StateDeployed {
 
         // check that signature cannot be replayed
         vm.prank(sender);
-        vm.expectRevert("FiatTokenV2: caller must be the payee");
+        vm.expectRevert("Caller must be the payee");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
 
         // check that signature cannot be replayed on another fn call
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
         // check that signature cannot be replayed on another fn call
-        vm.expectRevert("FiatTokenV2: authorization is used or canceled");
+        vm.expectRevert("Authorization is used or canceled");
         mocaToken.cancelAuthorization(from, nonce, v, r, s);
     }
     
@@ -506,7 +520,7 @@ contract StateDeployedTest1271 is StateDeployed {
         // execute gasless transfer. caller IS NOT payee. THIS SHOULD REVERT.
         
         vm.prank(treasury);
-        vm.expectRevert("FiatTokenV2: caller must be the payee");
+        vm.expectRevert("Caller must be the payee");
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
     } 
 

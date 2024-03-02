@@ -18,6 +18,14 @@ contract MocaToken is EIP3009 {
 
 
     /**
+     * @notice Fn caller can only burn their own tokens
+     * @param amount          Amount of tokens to burn 
+     */
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+    }
+
+    /**
      * @notice Execute a transfer with a signed authorization
      * @param from          Payer's address (Authorizer)
      * @param to            Payee's address
