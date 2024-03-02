@@ -125,10 +125,43 @@ The DevTools repo is especially useful for reference examples:
 # PENDING
 
 - setEnforcedParams gasLimits on sendAndCall (msgType: 2)
-- create scripts to break connection vs pausable
 
-# Contingency
+# Contingency (Proposed)
 
 - off-chain monitoring of tokens bridged
 - disconnect bridge when source chain emits malicious/incorrect LzSend event
 -- what happens to the tokens on the src when you d/c the dst, after firing off on the src?
+
+## Off-chain monitoring
+
+Track I/O flows of tokens, ensuring that incorrect minting and burning does not occur.
+
+When an incorrect lz event is emitted on the src chain, we look to disconnect the bridge by calling `setPeers` on the dst chain. Obviously, since the event is emitted on the src chain, nothing much can be done there. However, by breaking the connection between chains, on the dst chain we can essentially front-run the LZ relay and prevent a malicious mint.
+
+![alt text](image.png)
+**It is important to note that the end result of creating this blockage is that tokens will be lost on the src chain.**
+
+In trying to prevent a malicious attack by breaking the bridge, it is also important to pause the contracts to prevent further txns from coming through on the src side.
+
+Implementing this solution requires a db of all the addresses with MocaTokens across all chains. A script will conduct an accounting check, each time a `send` event is emitted, like so:
+
+1. Verify that the user does indeed have the sufficient tokens on src chain for the bridging event.
+2. Verify that the params passed in the event are accurate
+3. Verify that the event emitted on dst and tokens minted are accurate.
+
+Remediation:
+
+- If step 2 fails, disconnect connection btw src and dst, on dst chain.
+- If step 3 fails, pause bridging everywhere.
+
+> Consider: https://forta.org/
+
+## Alternative
+
+A simple alternative is to just track global token balances on all chains, ensuring they add up to the correct total supply. The moment this value is breached, pause all bridging everywhere. 
+
+### Remediation ?
+
+Unknown. Successful resolution may not be possible, particularly in extreme circumstances.
+
+In minor one-off instances, where the value lost through attack or bugged execution, the treasury could step-in and buy up that supply or cover user losses.

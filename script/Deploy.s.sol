@@ -229,50 +229,34 @@ contract SendTokensToAway is State, Script {
 
 //  forge script script/Deploy.s.sol:SendTokensToAway --rpc-url sepolia --broadcast -vvvv
 
+//Note: User bridges tokens.
+//      Txn clears on src chain
+//      Bridge is d/c on the dst chain, before message is received
+//      what happens to the user token?    
 
-/*
-contract SendTokensToAwayAndCall is State, Script {
 
-    struct LzCallParams {
-        address payable refundAddress;
-        address zroPaymentAddress;
-        bytes adapterParams;
-    }
+//  starting balance: 8888888885000000000000000000
+//  1. SendTokensToAway: send tokens on src
+//  2. BreakBridge: break bridge on dst
+//  Result:
+//   tokens locked in adaptor on home chain
+//   nothing minted on the dst. 
+//   LZ relaying failed: https://testnet.layerzeroscan.com/tx/0xc76c780e0ab4a7ae4cbf1375d3795afbbf2cde09403c64174d1c32b011891420
+//   the user has "lost" a token, as there is no way to retrieve it from the adaptor.
 
+contract BreakBridge is State, Script {
     function run() public {
+        
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        TestToken testToken = TestToken(homeChainTokenContract);
-
-        // defaultAdapterParams: min/max gas?
-        bytes memory defaultAdapterParams = abi.encodePacked(uint16(1), uint256(200000));
-
-        //payload and gas
-        bytes memory _payload = abi.encodeWithSignature("setApprovalForAll(address,bool)", msg.sender, true);
-        uint64 _dstGasForCall = 200000;
-
-        // let nativeFee = (await localOFT.estimateSendFee(remoteChainId, bobAddressBytes32, initialAmount, false, defaultAdapterParams)).nativeFee
-        (uint256 nativeFee, ) = testToken.estimateSendAndCallFee(goerliID, bytes32(uint256(uint160(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825))), 1e18, _payload, _dstGasForCall, false, defaultAdapterParams);
-        // sender sends tokens to himself on the remote chain
+        // eid:  The endpoint ID for the destination chain the other OFT contract lives on
+        // peer: The destination OFT contract address in bytes32 format
+        //        Set this to bytes32(0) to remove the peer address.
+        mocaOFT.setPeer(homeChainID,  bytes32(0));
         
-        // sender
-        address _from = 0x2BF003ec9B7e2a5A8663d6B0475370738FA39825;
-        // receiver
-        uint16 _dstChainId = goerliID;
-        bytes32 _toAddress = bytes32(uint256(uint160(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825)));
-        uint256 _amount = 1e18;
-        
-        ICommonOFT.LzCallParams memory _callParams;
-        _callParams = ICommonOFT.LzCallParams({refundAddress: payable(0x2BF003ec9B7e2a5A8663d6B0475370738FA39825), zroPaymentAddress: address(0), adapterParams: defaultAdapterParams});
-
-        //testToken.sendFrom{value: nativeFee}(_from, _dstChainId, _toAddress, _amount, _callParams);
-        testToken.sendAndCall(_from, _dstChainId, _toAddress, _amount, _payload, _dstGasForCall, _callParams);
-
         vm.stopBroadcast();
     }
 }
 
-*/
-
-//  forge script script/Deploy.s.sol:SendTokensToAwayAndCall --rpc-url sepolia --broadcast -vvvv
+// forge script script/Deploy.s.sol:BreakBridge --rpc-url polygon_mumbai --broadcast -vvvv
