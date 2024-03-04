@@ -7,9 +7,14 @@ pragma solidity ^0.8.20;
  * @title EIP712 Domain
  */
 contract EIP712Domain {
+    
     // was originally DOMAIN_SEPARATOR
     // but that has been moved to a method so we can override it in V2_2+
-    bytes32 internal _DEPRECATED_CACHED_DOMAIN_SEPARATOR;
+    bytes32 internal _DOMAIN_SEPARATOR;
+
+    // to prevent signature replay attacks in the event the chain forks
+    // fork chain would have different chain id to original chain
+    uint256 internal immutable _DEPLOYMENT_CHAINID;
 
     /**
      * @notice Get the EIP712 Domain Separator.
@@ -24,6 +29,7 @@ contract EIP712Domain {
      * @return The bytes32 EIP712 domain separator.
      */
     function _domainSeparator() internal virtual view returns (bytes32) {
-        return _DEPRECATED_CACHED_DOMAIN_SEPARATOR;
+        return _DOMAIN_SEPARATOR;
     }
+
 }

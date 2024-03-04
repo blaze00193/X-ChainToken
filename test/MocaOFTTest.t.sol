@@ -7,6 +7,11 @@ import {MocaOFTMock} from "./mocks/MocaOFTMock.sol";
 import {DummyContractWallet} from "./mocks/DummyContractWallet.sol";
 import {EndpointV2Mock} from "./mocks/EndpointV2Mock.sol";
 
+// SendParam
+import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
+import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+
+
 abstract contract StateDeployed is Test {
     
     MocaOFTMock public mocaToken;
@@ -518,4 +523,33 @@ contract StateDeployedTest1271 is StateDeployed {
         mocaToken.receiveWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
     } 
 
+}
+
+contract StateDeployedTestPausable is StateDeployed {
+
+    function testPausedSend() public {
+
+        vm.prank(deployer);
+        mocaToken.pause();
+
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: 1111,
+            to: bytes32(uint256(uint160(address(1111)))),
+            amountLD: 1 ether,
+            minAmountLD: 1 ether,
+            extraOptions: nullBytes,
+            composeMsg: nullBytes,
+            oftCmd: nullBytes
+        });
+
+        MessagingFee memory messagingFee;
+        messagingFee.lzTokenFee = 0;
+        messagingFee.nativeFee = 0;
+
+        mocaToken.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(1111));
+
+
+    }
 }
