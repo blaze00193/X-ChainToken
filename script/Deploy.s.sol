@@ -154,8 +154,8 @@ contract SetGasLimitsHome is State, Script {
         EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
         
-        // block sendAndCall
-        enforcedOptionParams[1] = EnforcedOptionParam(remoteChainID, 2, hex"00030100110100000000000000000000000000061a80");
+        // block sendAndCall: createLzReceiveOption() set gas requirement to be 1M
+        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
 
         mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
@@ -178,8 +178,8 @@ contract SetGasLimitsAway is State, Script {
         EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
         
-        // block sendAndCall
-        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"00030100110100000000000000000000000000061a80");
+        // block sendAndCall: createLzReceiveOption() set gas requirement to be 1M
+        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
@@ -214,12 +214,13 @@ contract SendTokensToAway is State, Script {
             amountLD: 1 ether,                                                                   // Amount to send in local decimals        
             minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
             extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
-            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
+            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
             oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
         });
 
         // Fetching the native fee for the token send operation
         MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteOFT(sendParam);
 
         // send tokens xchain
         mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
@@ -261,3 +262,38 @@ contract BreakBridge is State, Script {
 }
 
 // forge script script/Deploy.s.sol:BreakBridge --rpc-url polygon_mumbai --broadcast -vvvv
+
+
+contract SendAndCall is State, Script {
+        
+    function run() public {
+
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        //set approval for adaptor to spend tokens
+        mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
+
+        
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: remoteChainID,                                                               // Destination endpoint ID.
+            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),  // Recipient address.
+            amountLD: 1 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: "sendANdCALL",                                                                // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        // Fetching the native fee for the token send operation
+        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteOFT(sendParam);
+
+        // send tokens xchain
+        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+
+        vm.stopBroadcast();
+    }
+
+}

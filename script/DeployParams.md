@@ -6,7 +6,7 @@ We use enforcedOptions to set gas limits.
 
 ### Set gasLimits for LzReceive
 
-To set gas limits for lzReceive, we need to utlise the lzReceive option:
+To set gas limits for lzReceive, we need to utilise the lzReceive option:
 
 > lzReceiveOption - handles setting gas and msg.value amounts when calling the destination contract's lzReceive method.
 
@@ -46,9 +46,9 @@ struct EnforcedOptionParam {
 Hence in our deploy script when you see: `enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");`,
 it means we are putting in place an enforced option (on the home chain), wrt to some remoteChain specified by the `eid`.
 
-This means that if lzReceive is invoked on the homeChain, by the remoteChain, and the message if of type 1, it must have the described gas and msg.value amounts as per the options bytes.
+This means that when users wish to make a x-chain txn to the remoteChain, the Oapp will ensure these enforcedOptions are met; else the transaction fails and reverts.
 
-For the minting of an OFT token, we do not need `_value`, as there are not additional fn execution steps. We do need gas for the `lzReceive` execution (hence the minting), therefore `_gas`= 200000.
+For the minting of an OFT token, we do not need `_value`, as there are no additional execution steps. We do need gas for the `lzReceive` execution (minting on dst), therefore `_gas`= 200000.
 
 ### Block msgType:2
 
@@ -56,7 +56,8 @@ We opt to block `sendAndCall` to prevent a potential attack vector that might bl
 
 In LZv2, sendAndCall is denominated as msgType: 2. Thus to block it, we execute:
 
-        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"00030100110100000000000000000000000000061a80");
+        // block sendAndCall: createLzReceiveOption() set gas requirement to be 1M
+        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
@@ -64,13 +65,10 @@ We use the [OptionsBuilder](https://remix.ethereum.org/#url=https://docs.layerze
 
 We pass the following parameters into `createLzReceiveOption`:
 
-- gas: 400000 (amount consumed for x-chain call)
-- value: 0    (amount of actual native currency you are sending across chains)
+- gas: 1000000 (amount consumed for x-chain call)
+- value: 0     (amount of actual native currency you are sending across chains)
 
-This gives us the output of `hex"00030100110100000000000000000000000000061a80"`.
-
-
-
+This gives us the output of `hex"00030100110100000000000000000000000000061a80"`. By setting required gas to be 1M, its a sensible block.
 
 ## Send Params
 
