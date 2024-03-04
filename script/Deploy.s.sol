@@ -151,11 +151,11 @@ contract SetGasLimitsHome is State, Script {
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
-        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
         
         // block sendAndCall
-        //enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex" ");
+        enforcedOptionParams[1] = EnforcedOptionParam(remoteChainID, 2, hex"00030100110100000000000000000000000000061a80");
 
         mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
@@ -177,8 +177,9 @@ contract SetGasLimitsAway is State, Script {
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
         EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
+        
         // block sendAndCall
-        //enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex" ");
+        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"00030100110100000000000000000000000000061a80");
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
@@ -208,20 +209,20 @@ contract SendTokensToAway is State, Script {
         
         bytes memory nullBytes = new bytes(0);
         SendParam memory sendParam = SendParam({
-            dstEid: remoteChainID,
-            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),
-            amountLD: 1 ether,
-            minAmountLD: 1 ether,
-            extraOptions: nullBytes,
-            composeMsg: nullBytes,
-            oftCmd: nullBytes
+            dstEid: remoteChainID,                                                               // Destination endpoint ID.
+            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),  // Recipient address.
+            amountLD: 1 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
         });
 
         // Fetching the native fee for the token send operation
         MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
 
         // send tokens xchain
-        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db ));
+        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
 
         vm.stopBroadcast();
     }
