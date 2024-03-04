@@ -6,10 +6,13 @@ import {Test, console2} from "forge-std/Test.sol";
 import {MocaOFTMock} from "./mocks/MocaOFTMock.sol";
 import {DummyContractWallet} from "./mocks/DummyContractWallet.sol";
 import {EndpointV2Mock} from "./mocks/EndpointV2Mock.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 // SendParam
 import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import { Origin } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 
 
 abstract contract StateDeployed is Test {
@@ -44,7 +47,6 @@ abstract contract StateDeployed is Test {
         // contracts
         string memory name = "TestToken"; 
         string memory symbol = "TT";
-        address _lzEndpoint = address(2);
         
         lzMock = new EndpointV2Mock();
         mocaToken = new MocaOFTMock(name, symbol, address(lzMock), deployer, deployer);
@@ -525,8 +527,34 @@ contract StateDeployedTest1271 is StateDeployed {
 
 }
 
-/*
+
 contract StateDeployedTestPausable is StateDeployed {
+
+    function testUserCannotCallPause() public {
+        
+        assertEq(mocaToken.paused(), false);
+        
+        vm.prank(userA);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
+        mocaToken.pause();
+
+        assertEq(mocaToken.paused(), false);
+    }
+
+    function testOwnerCanCallPause() public {
+        
+        assertEq(mocaToken.paused(), false);
+
+        vm.prank(deployer);
+        mocaToken.pause();
+
+        assertEq(mocaToken.paused(), true);
+
+        vm.prank(deployer);
+        mocaToken.unpause();
+
+        assertEq(mocaToken.paused(), false);
+    }
 
     function testPausedSend() public {
 
@@ -537,7 +565,7 @@ contract StateDeployedTestPausable is StateDeployed {
         bytes memory nullBytes = new bytes(0);
         SendParam memory sendParam = SendParam({
             dstEid: 1111,
-            to: bytes32(uint256(uint160(address(1111)))),
+            to: bytes32(uint256(uint160(address(deployer)))),
             amountLD: 1 ether,
             minAmountLD: 1 ether,
             extraOptions: nullBytes,
@@ -549,10 +577,49 @@ contract StateDeployedTestPausable is StateDeployed {
         messagingFee.lzTokenFee = 0;
         messagingFee.nativeFee = 0;
 
-        mocaToken.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(1111));
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
+        mocaToken.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(deployer));
+    }
 
+    function testPauseLzReceive() public {
+        vm.prank(deployer);
+        mocaToken.pause();
+
+
+        Origin memory _origin;
+        bytes32 _guid;
+        bytes memory _message;
+        address unnamedAddress;  
+        bytes memory unnamedBytes;
+
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
+        mocaToken.mockLzReceive(_origin, _guid, _message, unnamedAddress, unnamedBytes);
+    }
+
+    function testTransferPaused() public {
+        vm.prank(deployer);
+        mocaToken.pause();
+
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
+        mocaToken.transfer(userA, 1 ether);
 
     }
-}
 
- */
+    function testTransferFromPaused() public {
+        vm.prank(deployer);
+        mocaToken.pause();
+        
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
+        mocaToken.transferFrom(deployer, userA, 1 ether);
+
+    }
+
+    function testApprovePaused() public {
+        vm.prank(deployer);
+        mocaToken.pause();
+        
+        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
+        mocaToken.approve(userA, 1 ether);
+    }
+
+}

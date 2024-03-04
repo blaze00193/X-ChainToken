@@ -36,6 +36,9 @@ When is this measure sensible?
 - Possibly when a breach of totalSupply has occurred. It is necessary to freeze everything and investigate.
 - Important that token transfers cannot occur, to avoid obfuscating evidence.
 
+The exception to this is the MocaToken contract. We do not implement Pausable on it, as that would require implementing Ownable it.
+It is thought that pausing the Adaptor contract adjacent to it should be sufficient in limiting attack vectors arising from LayerZero.
+
 ### Alternative Measure: Breaking Bridges
 
 We can disconnect the connection between contracts by resetting `setPeers`.

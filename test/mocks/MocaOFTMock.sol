@@ -23,4 +23,8 @@ contract MocaOFTMock is MocaOFT {
         _mint(msg.sender, amount);
     }
 
+    function mockLzReceive(Origin calldata _origin, bytes32 _guid, bytes calldata _message, address unnamedAddress, bytes calldata unnamedBytes) public payable {
+        _lzReceive(_origin, _guid, _message, unnamedAddress, unnamedBytes);
+    }
+
 }

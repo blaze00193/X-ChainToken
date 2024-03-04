@@ -10,8 +10,8 @@ import { EIP712 } from "./utils/EIP712.sol";
 
 // SendParam
 import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
-import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
-import { OApp, Origin } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
+//import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+import { Origin } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 
 
 //Note: To be deployed everywhere else, outside of the home chain
@@ -22,16 +22,16 @@ contract MocaOFT is OFT, EIP3009, Pausable {
 
 
     /**
-     * @param _name token name
-     * @param _symbol token symbol
-     * @param _lzEndpoint LayerZero Endpoint address
-     * @param _delegate The address capable of making OApp configurations inside of the endpoint.
-     * @param _owner token owner
+     * @param name token name
+     * @param symbol token symbol
+     * @param lzEndpoint LayerZero Endpoint address
+     * @param delegate The address capable of making OApp configurations inside of the endpoint.
+     * @param owner token owner
      */
-    constructor(string memory _name, string memory _symbol, address _lzEndpoint, address _delegate, address _owner) 
-        OFT(_name, _symbol, _lzEndpoint, _delegate) Ownable(_owner) {
+    constructor(string memory name, string memory symbol, address lzEndpoint, address delegate, address owner) 
+        OFT(name, symbol, lzEndpoint, delegate) Ownable(owner) {
 
-        _DOMAIN_SEPARATOR = EIP712.makeDomainSeparator(_name, _version);
+        _DOMAIN_SEPARATOR = EIP712.makeDomainSeparator(name, _version);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ contract MocaOFT is OFT, EIP3009, Pausable {
      
     function send(SendParam calldata _sendParam, MessagingFee calldata _fee, address _refundAddress)
         external payable override whenNotPaused returns(MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) {
-        
+            
         // "super.send()"
 
         // @dev Applies the token transfers regarding this send() operation.
@@ -107,9 +107,9 @@ contract MocaOFT is OFT, EIP3009, Pausable {
         Origin calldata _origin,
         bytes32 _guid,
         bytes calldata _message,
-        address unnamedAddress      /*_executor*/, // @dev unused in the default implementation.
-        bytes calldata unnamedBytes/*_extraData*/ // @dev unused in the default implementation.
-    ) internal virtual override whenNotPaused {
+        address unnamedAddress,      /*_executor*/ // @dev unused in the default implementation.
+        bytes calldata unnamedBytes  /*_extraData*/ // @dev unused in the default implementation.
+    ) internal override whenNotPaused {
 
         super._lzReceive(_origin, _guid, _message, unnamedAddress, unnamedBytes);
     }
