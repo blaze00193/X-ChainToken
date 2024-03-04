@@ -45,7 +45,7 @@ contract MocaOFT is OFT, EIP3009, Pausable {
     /*//////////////////////////////////////////////////////////////
                               LZ OVERRIDE
     //////////////////////////////////////////////////////////////*/
-
+/*
     /**
      * @notice Added whenNotPaused modifier 
      * @dev Executes the send operation.
@@ -62,6 +62,7 @@ contract MocaOFT is OFT, EIP3009, Pausable {
      *  - nonce: The nonce of the sent message.
      *  - fee: The LayerZero fee incurred for the message.
      */
+/*     
     function send(
         SendParam calldata _sendParam, 
         MessagingFee calldata _fee, 
@@ -71,7 +72,7 @@ contract MocaOFT is OFT, EIP3009, Pausable {
         super.send(_sendParam, _fee, _refundAddress);
     }
 
-
+*/
     /*//////////////////////////////////////////////////////////////
                                 EIP3009
     //////////////////////////////////////////////////////////////*/

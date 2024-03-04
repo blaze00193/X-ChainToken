@@ -125,6 +125,7 @@ The DevTools repo is especially useful for reference examples:
 # PENDING
 
 - setEnforcedParams gasLimits on sendAndCall (msgType: 2)
+- pausable modifier on send override
 
 # Contingency (Proposed)
 

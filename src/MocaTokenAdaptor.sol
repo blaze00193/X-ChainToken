@@ -44,6 +44,7 @@ contract MocaTokenAdaptor is OFTAdapter, Pausable {
      *  - nonce: The nonce of the sent message.
      *  - fee: The LayerZero fee incurred for the message.
      */
+/*     
     function send(
         SendParam calldata _sendParam, 
         MessagingFee calldata _fee, 
@@ -52,7 +53,7 @@ contract MocaTokenAdaptor is OFTAdapter, Pausable {
         
         super.send(_sendParam, _fee, _refundAddress);
     }
-
+*/
     /*//////////////////////////////////////////////////////////////
                                 PAUSABLE
     //////////////////////////////////////////////////////////////*/

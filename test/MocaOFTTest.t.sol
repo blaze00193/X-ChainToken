@@ -525,6 +525,7 @@ contract StateDeployedTest1271 is StateDeployed {
 
 }
 
+/*
 contract StateDeployedTestPausable is StateDeployed {
 
     function testPausedSend() public {
@@ -553,3 +554,5 @@ contract StateDeployedTestPausable is StateDeployed {
 
     }
 }
+
+ */
