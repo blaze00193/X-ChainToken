@@ -33,9 +33,12 @@ contract MocaOFT is OFT, EIP3009, Pausable {
         _DOMAIN_SEPARATOR = EIP712.makeDomainSeparator(_name, _version);
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                 EIP721
+    //////////////////////////////////////////////////////////////*/
 
     function _domainSeparator() internal override view returns (bytes32) {
-        return block.chainid == _DEPLOYMENT_CHAINID ? _DEPRECATED_CACHED_DOMAIN_SEPARATOR : EIP712.makeDomainSeparator(name(), _version);
+        return block.chainid == _DEPLOYMENT_CHAINID ? _DOMAIN_SEPARATOR : EIP712.makeDomainSeparator(name(), _version);
 
     }
 

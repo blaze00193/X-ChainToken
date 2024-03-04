@@ -8,8 +8,8 @@ import { MessagingParams, MessagingFee, MessagingReceipt } from "@layerzerolabs/
 
 contract EndpointV2Mock {
 
-    function setDelegate(address /*_delegate*/) external;
+    function setDelegate(address /*_delegate*/) external{}
 
-    function send(SendParam calldata _sendParam, MessagingFee calldata _fee, address _refundAddress) external payable;
+    function send(SendParam calldata _sendParam, MessagingFee calldata _fee, address _refundAddress) external payable{}
 
 }
