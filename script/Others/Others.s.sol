@@ -314,5 +314,5 @@ contract RetryMessage is State {
 // forge script script/Others/Others.s.sol:RetryMessage --rpc-url polygon_mumbai --broadcast -vvvv
 
 // sepolia txn hash: 0x4926862c0b083544fae1cb2d3c2c297223562ff13d285ce6423fe547775a5bd3
-// 
+// in LZscan it is now marked as Delivered
 
