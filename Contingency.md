@@ -1,6 +1,12 @@
 # Contingency (Proposed)
 
-Engage in off-chain monitoring of tokens bridged. Could potentially use Tenderly to set up alerts to ensure that total supply is not breached.
+Engage in off-chain monitoring of bridging. This can be done in 2 ways:
+
+1. Tracking general health: Track total supply on every OFT contract to ensure it is not exceeded.
+2. Transaction Monitoring: Track each bridging transaction to ensure it is not malicious.
+
+With respect to option 1, we could potentially use Tenderly to set up alerts to ensure that total supply is not breached.
+> Consider: https://forta.org/
 
 ## Mitigation options
 
@@ -8,7 +14,7 @@ Engage in off-chain monitoring of tokens bridged. Could potentially use Tenderly
 2. Disconnect bridge between two contracts if there is an extended malicious campaign.
 3. Pause all/relevant LZ contracts across multiple chains.
 
-# Off-chain monitoring
+# Off-chain transaction monitoring
 
 ## Rejecting/Blocking a malicious txn
 
@@ -48,11 +54,10 @@ When is this measure sensible?
 - This could be on part due to faulty LZ messaging/validation in that specific part of the network
 - Meaning, the attack cannot be reproduced elsewhere.
 
-## Alternative Measure: Pausing all contracts
+## Alternative Measure: Pausing all LZ contracts
 
-- We can pause all contracts, across all chains.
-- This includes x-chain messaging as well as token transfers
-- Essentially, we freeze all contracts.
+We can pause all contracts, across all chains, with the exception of the MocaToken contract.
+This includes x-chain messaging as well as token transfers.
 
 When is this measure sensible?
 
@@ -62,25 +67,7 @@ When is this measure sensible?
 The exception to this is the MocaToken contract. We do not implement Pausable on it, as that would require implementing Ownable it.
 It is thought that pausing the Adaptor contract adjacent to it should be sufficient in limiting attack vectors arising from LayerZero.
 
-## Tracking general health
-
-Have a secondary script track global token balances on all chains, ensuring they add up to the correct total supply. When this value is breached, pause all contracts everywhere.
-
-Implementing this solution requires a db of all the addresses with MocaTokens across all chains. A script will conduct an accounting check, each time a `send` event is emitted, like so:
-
-1. Verify that the user does indeed have the sufficient tokens on src chain for the bridging event.
-2. Verify that the params passed in the event are accurate
-3. Verify that the event emitted on dst and tokens minted are accurate.
-
-Remediation:
-
-- If step 2 fails, disconnect connection btw src and dst, on dst chain.
-- If step 3 fails, pause bridging everywhere.
-
-> Consider: https://forta.org/
-
-## Remediation ?
+## Remediation
 
 Unknown. Successful resolution may not be possible, particularly in extreme circumstances.
-
 In minor one-off instances, where the value lost through attack or bugged execution, the treasury could step-in and buy up that supply or cover user losses.
