@@ -1,3 +1,8 @@
+# Setup
+
+- forge install
+- npm install
+
 # Background
 
 MocaToken is an omni-chain token, powered by LayerZero V2. It utilises the latest OFT standard and Endpoints as per the V2 iteration of the protocol.
@@ -17,10 +22,18 @@ Thus for a user to bridge when on the home chain, they would:
 
 ![alt text](image-1.png)
 
-## Setup
+In short, the core contracts are:
 
-- forge install
-- npm install
+- MocaToken.sol 
+- MocaTokenAdaptor.sol 
+- MocaOFT.sol
+
+The first two will be deployed on Ethereum, while the last one will be deployed on every other remote chain.
+
+## Why do we opt to use the TokenAdaptor contract?
+
+We felt that having the adaptor would be a useful security bulwark in case of an unexpected event, since it would be limited by approvals set and the liquidity at risk would be purely the tokens locked in it. 
+In way, defence in depth.
 
 ## Gas-less transaction and Permit
 
@@ -30,15 +43,16 @@ Thus for a user to bridge when on the home chain, they would:
 
 EIP3009 has been successfully used by Circle, in its USDC implementation since v1. This offers us a degree of confidence.
 
-EIP3009.sol and its dependencies were taken from the repo linked below.
+To that end both MocaToken and MocaOFT contracts implemented the following functions:
 
-- They were initially built with solidity version 0.6; we have updated them to 0.8.
-- As part of the update, the only refactoring done was changing `now` to `block.timestamp`.
-- Additionally, EIP3009.sol now inherits ERC20.sol (from OpenZeppelin V5).
-- EIP3009.sol used to inherit AbstractFiatTokenV2 - it no longer does.
-- Reference to AbstractFiatTokenV2 and AbstractFiatTokenV1 were dropped.
+- `transferWithAuthorization`
+- `cancelAuthorization`
+- `receiveWithAuthorization`
 
-src: https://etherscan.deth.net/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48#code
+The primary difference between `transferWithAuthorization` and `receiveWithAuthorization` is that the latter function is called by the beneficiary of funds, providing a valid signature that was originally signed by the sender.
+Both EOA and Smart contract signatures (EIP1271) are supported.
+
+>Note that neither `increaseAllowance` nor `decreaseAllowance ` were implemented
 
 ## MocaToken Contract
 
@@ -55,22 +69,6 @@ Total supply will be minted to the specified treasury address on deployment.
 
 It does have a standard `burn` function - msg.sender can burn his own assets. Nothing more.
 
-### Functions
-
-Ignoring the standard ERC20 functions as per ERC20.sol, the following functions were added:
-
-- `transferWithAuthorization`
-- `cancelAuthorization`
-- `receiveWithAuthorization`
-
-These 3 functions are implemented in-line with EIP3009, serving as substitute for EIP2612.
-
-The primary difference between `transferWithAuthorization` and `receiveWithAuthorization` is that the latter function is called by the beneficiary of funds, providing a valid signature that was originally signed by the sender.
-
-Both EOA and Smart contract wallets signatures (EIP1271) are supported.
-
->Note that neither `increaseAllowance` nor `decreaseAllowance ` were implemented
-
 ## MocaTokenAdaptor Contract
 
 Since we have opted to not natively deploy the token with LZ, the MocaTokenAdaptor contract will have to be deployed on the home chain alongside the MocaToken contract.
@@ -85,9 +83,17 @@ This contract will be deployed on all other remote chains, serving as a touchpoi
 
 - Token is locked on home chain by MocaTokenAdaptor
 - X-Chain message sent via LZ off-chain network
-- MocaOFt contract on destination chain receives this message and mints the user address the appropriate amount of tokens.
+- MocaOFT contract on destination chain receives this message and mint the user address the appropriate amount of tokens.
 
 Please see testnet deployments as a practical reference.
+
+### Pausable
+
+The contracts with LZ functionality, MocaOFT and MocaTokenAdaptor, implement Pausable.
+
+While it is understood that the connectivity between two contracts can be severed via `setPeers`, we want to be anticipatory in dealing with unforeseeable circumstances. Especially so, given that the V2 iteration of LayerZero is fairly new, and any unexpected critical attacks would occur through the LZ vector, therefore also rendering the typical LZ safeguards non-operational.
+
+Given its our first outing with LZ, best to be prepared.
 
 ## Testnet Deployments
 
@@ -103,13 +109,12 @@ V2: DeployMock.s.sol (has unrestricted mint function)
 - MocaTokenAdaptor: https://sepolia.etherscan.io/address/0xc8011cb9cfca55b822e56dd048dc960abd6424ce#code
 - MocaOFT: https://mumbai.polygonscan.com/address/0x7d7b79b59ffb5c684a8bad8fb1729aaa27883dde
 
-For those that want to play out, use the set of contracts as part of the V2 deployment as MocaToken has an unrestricted public mint function.
-
+Please feel free to use V2 to make your own testnet transactions - the MocaToken contract in this deployment batch has an unrestricted public mint function.
 V1 does not, and is meant to reflect how an actual deployment would be.
 
-## Integration
+# Front-end Integration
 
-### Crafting signatures
+## Crafting signatures
 
 Looking at the test file MocaTokenTest.t.sol will give a clearer picture on the execution process, with respect to integration.
 
@@ -118,7 +123,7 @@ It's implementation of `isValidSignature` should be referenced.
 
 If a smart contract wallet implements `isValidSignature` differently, the signature verification will fail.
 
-### Crafting LZ params
+## Crafting LZ params
 
 Looking at Deploy.s.sol, contract `SendTokensToAway` will give you an idea what params need to be crafted before calling `mocaTokenAdaptor.send` to bridge.
 Essentially its a 2-step process,
@@ -142,8 +147,3 @@ As part of the deployment process I have enforced that users to pay a minimum of
 The DevTools repo is especially useful for reference examples:
 
 - [devtools](https://github.com/LayerZero-Labs/devtools/?tab=readme-ov-file#bootstrapping-an-example-cross-chain-project)
-
-# PENDING
-
-- setEnforcedParams gasLimits on sendAndCall (msgType: 2)
-- pausable modifier on send override
