@@ -231,6 +231,39 @@ contract SendTokensToAway is State, Script {
 
 //  forge script script/Deploy.s.sol:SendTokensToAway --rpc-url sepolia --broadcast -vvvv
 
+contract SendTokensToHome is State, Script {
+
+    function run() public {
+
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+        
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: homeChainID,                                                               // Destination endpoint ID.
+            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),  // Recipient address.
+            amountLD: 1 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        // Fetching the native fee for the token send operation
+        MessagingFee memory messagingFee = mocaOFT.quoteSend(sendParam, false);
+        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteOFT(sendParam);
+
+        // send tokens xchain
+        mocaOFT.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+
+        vm.stopBroadcast();
+    }
+}
+
+//  forge script script/Deploy.s.sol:SendTokensToHome --rpc-url polygon_mumbai --broadcast -vvvv
+
+
+
 //Note: User bridges tokens.
 //      Txn clears on src chain
 //      Bridge is d/c on the dst chain, before message is received

@@ -1,5 +1,29 @@
 # Background
 
+MocaToken is an omni-chain token, powered by LayerZero V2. It utilises the latest OFT standard and Endpoints as per the V2 iteration of the protocol.
+
+MocaToken is not natively deployed through LayerZero, instead it is primarily deployed as a standalone ERC20 contract, following which integrated with LayerZero via the TokenAdaptor contract.
+This token adaptor contract sits on the same chain as the deployed token contract (we refer to this as the home chain), and serves as a lockbox.
+
+Essentially, users will have to lock their moca tokens on the home chain, by transferring it to the token adaptor contract, following which bridging can place. This is known as lock and mint.
+> Please see: https://docs.layerzero.network/contracts/oft-adapter
+
+On all other chains (remote chains), the MocaOFT contract is deployed. The OFT contract offers both ERC20 and LZ functionality.
+
+Thus for a user to bridge when on the home chain, they would:
+
+1. Grant approval for the Adaptor contract to spent the required amount of tokens
+2. Call `send` on the Adaptor contract, supplying the input parameters specifying dstChain, amount to bridge, etc
+
+![alt text](image-1.png)
+
+## Setup
+
+- forge install
+- npm install
+
+## Gas-less transaction and Permit
+
 1. EIP2621 is broken: https://www.trust-security.xyz/post/permission-denied
 2. We want to still offer gasless transaction for our users.
 3. Solution: EIP3009
@@ -15,11 +39,6 @@ EIP3009.sol and its dependencies were taken from the repo linked below.
 - Reference to AbstractFiatTokenV2 and AbstractFiatTokenV1 were dropped.
 
 src: https://etherscan.deth.net/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48#code
-
-## Setup
-
-- forge install
-- npm install
 
 ## MocaToken Contract
 

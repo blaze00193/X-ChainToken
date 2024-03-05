@@ -322,7 +322,7 @@ contract RetryMessage is State {
      Message cannot be retried. It is burnt
  */
 contract ClearingMessage is State {
-
+/*
     function run() public broadcast {
 
         //clear(address _oapp, Origin calldata _origin, bytes32 _guid, bytes calldata _message)
@@ -332,5 +332,5 @@ contract ClearingMessage is State {
         bytes calldata _message;
         ILayerZeroEndpointV2(mumbaiEP).clear(_oapp, _origin, _guid, _message);
 
-    }
+    }*/
 }
