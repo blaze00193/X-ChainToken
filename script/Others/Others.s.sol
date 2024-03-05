@@ -316,3 +316,21 @@ contract RetryMessage is State {
 // sepolia txn hash: 0x4926862c0b083544fae1cb2d3c2c297223562ff13d285ce6423fe547775a5bd3
 // in LZscan it is now marked as Delivered
 
+
+/**
+    We clear a message when it is deemed malicious.
+     Message cannot be retried. It is burnt
+ */
+contract ClearingMessage is State {
+
+    function run() public broadcast {
+
+        //clear(address _oapp, Origin calldata _origin, bytes32 _guid, bytes calldata _message)
+        address _oapp = mocaOFTAddress;
+        Origin calldata _origin; 
+        bytes32 _guid;
+        bytes calldata _message;
+        ILayerZeroEndpointV2(mumbaiEP).clear(_oapp, _origin, _guid, _message);
+
+    }
+}

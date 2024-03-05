@@ -151,11 +151,11 @@ contract SetGasLimitsHome is State, Script {
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
-        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
+        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
         enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
         
         // block sendAndCall: createLzReceiveOption() set gas requirement to be 1M
-        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
+        //enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
 
         mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
@@ -295,5 +295,6 @@ contract SendAndCall is State, Script {
 
         vm.stopBroadcast();
     }
-
 }
+
+// forge script script/Deploy.s.sol:SendAndCall --rpc-url sepolia --broadcast -vvvv
