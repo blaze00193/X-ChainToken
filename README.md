@@ -30,9 +30,11 @@ src: https://etherscan.deth.net/token/0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
 
 Total supply will be minted to the specified treasury address on deployment.
 
-- Contract is neither upgradable nor is pausable.
+- Contract is neither upgradable nor is it pausable.
 - Contract has no owner.
-- It does not have a callable mint or burn function.
+- It does not have a callable mint function.
+
+It does have a standard `burn` function - msg.sender can burn his own assets. Nothing more.
 
 ### Functions
 
