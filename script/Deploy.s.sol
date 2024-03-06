@@ -51,13 +51,8 @@ contract DeployHome is Script, LZState {
 }
 
 
-/**
-    forge script script/Deploy.s.sol:DeployHome --rpc-url sepolia --broadcast --verify -vvvv --etherscan-api-key sepolia
+// forge script script/Deploy.s.sol:DeployHome --rpc-url sepolia --broadcast --verify -vvvv --etherscan-api-key sepolia
     
-    backup RPC:
-    forge script script/Deploy.s.sol:DeployHome --rpc-url "https://rpc-mumbai.maticvigil.com" --broadcast --verify -vvvv --legacy --etherscan-api-key polygon
-*/
-
 
 //Note: Deploy OFT on remote
 contract DeployElsewhere is Script, LZState {
