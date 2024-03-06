@@ -32,8 +32,8 @@ The first two will be deployed on Ethereum, while the last one will be deployed 
 
 ## Why do we opt to use the TokenAdaptor contract?
 
-We felt that having the adaptor would be a useful security bulwark in case of an unexpected event, since it would be limited by approvals set and the liquidity at risk would be purely the tokens locked in it. 
-In way, defence in depth.
+We felt that having the adaptor would be a useful security bulwark in case of an unexpected event, since it would be limited by approvals set and the liquidity at risk would be purely the tokens locked in it.
+In a way, defence in depth.
 
 ## Gas-less transaction and Permit
 
