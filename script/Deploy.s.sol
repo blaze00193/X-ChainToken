@@ -214,11 +214,11 @@ contract SendTokensToAway is State, Script {
         });
 
         // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
-        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteOFT(sendParam);
+        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+        (OFTLimit memory oftLimit, OFTFeeDetail[] memory oftFeeDetails, OFTReceipt memory oftReceipt) = mocaTokenAdaptor.quoteOFT(sendParam);
 
         // send tokens xchain
-        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+        //mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
 
         vm.stopBroadcast();
     }

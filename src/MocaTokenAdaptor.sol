@@ -2,7 +2,6 @@
 pragma solidity 0.8.22;
 
 import { OFTAdapter } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFTAdapter.sol";
-import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 // LZ Structs
@@ -12,7 +11,33 @@ import { SendParam, MessagingFee, MessagingReceipt, OFTReceipt } from "node_modu
 
 //Note: Adaptor is only to be deployed on the home chain where the token contract was originally deployed. 
 //      Must approve OFT Adapter as a spender of your ERC20 token.
-contract MocaTokenAdaptor is OFTAdapter, Pausable {
+contract MocaTokenAdaptor is OFTAdapter {
+
+    // Outbound limits
+    mapping(uint32 chainID => uint256 outboundLimit) public outboundLimits;
+    mapping(uint32 chainID => uint256 sentTokenAmount) public sentTokenAmounts;
+    mapping(uint32 chainID => uint256 lastSentTimestamp) public lastSentTimestamps;
+
+    // Inbound limits
+    mapping(uint32 chainID => uint256 inboundLimit) public inboundLimits;
+    mapping(uint32 chainID => uint256 receivedTokenAmount) public receivedTokenAmounts;
+    mapping(uint32 chainID => uint256 lastReceivedTimestamp) public lastReceivedTimestamps;
+
+    // If an address is whitelisted, limit checks are skipped
+    mapping(address addr => bool isWhitelisted) public whitelist;
+
+    // if an address is an operator is can disconnect/connect bridges via setPeers
+    mapping(address addr => bool isOperator) public operators;
+
+    // events 
+    event SetOutboundLimit(uint32 indexed chainId, uint256 limit);
+    event SetInboundLimit(uint32 indexed chainId, uint256 limit);
+    event SetWhitelist(address indexed addr, bool isWhitelist);
+    event SetOperator(address indexed addr, bool isWhitelist);
+
+    // errors
+    error ExceedInboundLimit(uint256 limit, uint256 amount);
+    error ExceedOutboundLimit(uint256 limit, uint256 amount);
 
     /**
      * @param token a deployed, already existing ERC20 token address
@@ -25,92 +50,129 @@ contract MocaTokenAdaptor is OFTAdapter, Pausable {
     }
 
     /*//////////////////////////////////////////////////////////////
+                              RATE LIMITS
+    //////////////////////////////////////////////////////////////*/
+
+    function setOutboundCap(uint32 chainId, uint256 limit) external onlyOwner {
+        outboundLimits[chainId] = limit;
+        emit SetOutboundLimit(chainId, limit);
+    }
+
+    function setInboundCap(uint32 chainId, uint256 limit) external onlyOwner {
+        inboundLimits[chainId] = limit;
+        emit SetInboundLimit(chainId, limit);
+    }
+
+    function setWhitelist(address addr, bool isWhitelisted) external onlyOwner {
+        whitelist[addr] = isWhitelisted;
+        emit SetWhitelist(addr, isWhitelisted);
+    }
+
+    function setOperator(address addr, bool isOperator) external onlyOwner {
+        operators[addr] = isOperator;
+        emit SetOperator(addr, isOperator);
+    }
+
+    /**
+     * @dev Overwrite _debit to implement rate limits.
+     * @dev Burns tokens from the sender's specified balance.
+     * @param amountLD The amount of tokens to send in local decimals.
+     * @param minAmountLD The minimum amount to send in local decimals.
+     * @param dstEid The destination chain ID.
+     * @return amountSentLD The amount sent in local decimals.
+     * @return amountReceivedLD The amount received in local decimals on the remote.
+     */
+    function _debit(uint256 amountLD, uint256 minAmountLD, uint32 dstEid) internal override returns (uint256, uint256) {
+        // _burn(msg.sender, amountSentLD)
+        (uint256 amountSentLD, uint256 amountReceivedLD) = super._debit(amountLD, minAmountLD, dstEid);
+
+        // whitelisted addresses have no limits
+        if (whitelist[msg.sender]) return (amountSentLD, amountReceivedLD);
+
+        uint256 sentTokenAmount;
+        uint256 lastSentTimestamp = lastSentTimestamps[dstEid];
+        uint256 currTimestamp = block.timestamp;
+        
+        // Round down timestamps to the nearest day. 
+        // If these two values are different, it means at least one full day has passed since the last transaction.
+        if ((currTimestamp / (1 days)) > (lastSentTimestamp / (1 days))) {
+            sentTokenAmount = amountSentLD;        
+        } else {
+            // sentTokenAmount = recentSentAmount + incomingSendAmount
+            sentTokenAmount = sentTokenAmounts[dstEid] + amountSentLD;
+        }
+
+        // check against outboundCap
+        uint256 outboundCap = outboundLimits[dstEid];
+        if (sentTokenAmount > outboundCap) revert ExceedOutboundLimit(outboundCap, sentTokenAmount);
+
+        // update storage
+        sentTokenAmounts[dstEid] = sentTokenAmount;
+        lastSentTimestamps[dstEid] = currTimestamp;
+
+        return (amountSentLD, amountReceivedLD);
+    }
+
+    
+    /**
+     * @dev Credits tokens to the specified address.
+     * @param to The address to credit the tokens to.
+     * @param amountLD The amount of tokens to credit in local decimals.
+     * @param srcEid The source chain ID.
+     * @return amountReceivedLD The amount of tokens ACTUALLY received in local decimals.
+     */
+    function _credit(address to, uint256 amountLD, uint32 srcEid) internal override returns (uint256 amountReceivedLD) {
+        
+        amountReceivedLD = super._credit(to, amountLD, srcEid);
+
+        // whiteslisted address have no limits
+        if (whitelist[to]) return amountReceivedLD;
+
+
+        uint256 receivedTokenAmount;
+        uint256 lastReceivedTimestamp = lastReceivedTimestamps[srcEid];
+        uint256 currTimestamp = block.timestamp;
+
+        // Round down timestamps to the nearest day. 
+        // If these two values are different, it means at least one full day has passed since the last transaction.
+        if ((currTimestamp / (1 days)) > (lastReceivedTimestamp / (1 days))) {
+            receivedTokenAmount = amountReceivedLD;
+        } else {
+            receivedTokenAmount = receivedTokenAmounts[srcEid] + amountReceivedLD;
+        }
+
+        // ensure cap not exceeded
+        uint256 inboundCap = inboundLimits[srcEid];
+        if (receivedTokenAmount > inboundCap) revert ExceedInboundLimit(inboundCap, receivedTokenAmount);
+
+        // update storage
+        receivedTokenAmounts[srcEid] = receivedTokenAmount;
+        lastReceivedTimestamps[srcEid] = currTimestamp;
+
+        return amountReceivedLD;
+    } 
+
+
+    /*//////////////////////////////////////////////////////////////
                               LZ OVERRIDE
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Override to add whenNotPaused modifier.
-               original send() is external virtual. So we cannot call super.send()
-               Hence, we copy the body of the fn into this. 
-     * @dev Executes the send operation.
-     * @param _sendParam The parameters for the send operation.
-     * @param _fee The calculated fee for the send() operation.
-     *      - nativeFee: The native fee.
-     *      - lzTokenFee: The lzToken fee.
-     * @param _refundAddress The address to receive any excess funds.
-     * @return msgReceipt The receipt for the send operation.
-     * @return oftReceipt The OFT receipt information.
-     *
-     * @dev MessagingReceipt: LayerZero msg receipt
-     *  - guid: The unique identifier for the sent message.
-     *  - nonce: The nonce of the sent message.
-     *  - fee: The LayerZero fee incurred for the message.
+     * @notice Sets the peer address (OApp instance) for a corresponding endpoint.
+     * @param _eid The endpoint ID.
+     * @param _peer The address of the peer to be associated with the corresponding endpoint.
+     * @dev Only an operator of the OApp can call this function.
+     * @dev Indicates that the peer is trusted to send LayerZero messages to this OApp.
+     * @dev Set this to bytes32(0) to remove the peer address.
+     * @dev Peer is a bytes32 to accommodate non-evm chains.
      */
-     
-    function send(SendParam calldata _sendParam, MessagingFee calldata _fee, address _refundAddress)
-        external payable override whenNotPaused returns(MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) {
-        
-        // "super.send()"
+    function setPeer(uint32 _eid, bytes32 _peer) public override {
+        require(operators[msg.sender] == true || msg.sender == owner(), "Not Operator");
 
-        // @dev Applies the token transfers regarding this send() operation.
-        // - amountSentLD is the amount in local decimals that was ACTUALLY sent from the sender.
-        // - amountReceivedLD is the amount in local decimals that will be credited to the recipient on the remote OFT instance.
-        (uint256 amountSentLD, uint256 amountReceivedLD) = _debit(
-            _sendParam.amountLD,
-            _sendParam.minAmountLD,
-            _sendParam.dstEid
-        );
-
-        // @dev Builds the options and OFT message to quote in the endpoint.
-        (bytes memory message, bytes memory options) = _buildMsgAndOptions(_sendParam, amountReceivedLD);
-
-        // @dev Sends the message to the LayerZero endpoint and returns the LayerZero msg receipt.
-        msgReceipt = _lzSend(_sendParam.dstEid, message, options, _fee, _refundAddress);
-        // @dev Formulate the OFT receipt.
-        oftReceipt = OFTReceipt(amountSentLD, amountReceivedLD);
-
-        emit OFTSent(msgReceipt.guid, _sendParam.dstEid, msg.sender, amountSentLD);
+        peers[_eid] = _peer;
+        emit PeerSet(_eid, _peer);
     }
 
 
-    /**
-     * @dev Internal function to handle the receive on the LayerZero endpoint.
-     * @param _origin The origin information.
-     *  - srcEid: The source chain endpoint ID.
-     *  - sender: The sender address from the src chain.
-     *  - nonce: The nonce of the LayerZero message.
-     * @param _guid The unique identifier for the received LayerZero message.
-     * @param _message The encoded message.
-     * @dev _executor The address of the executor.
-     * @dev _extraData Additional data.
-     */
-    function _lzReceive(
-        Origin calldata _origin,
-        bytes32 _guid,
-        bytes calldata _message,
-        address unnamedAddress,      /*_executor*/ // @dev unused in the default implementation.
-        bytes calldata unnamedBytes  /*_extraData*/ // @dev unused in the default implementation.
-    ) internal override whenNotPaused {
-
-        super._lzReceive(_origin, _guid, _message, unnamedAddress, unnamedBytes);
-    }
-
-    /*//////////////////////////////////////////////////////////////
-                                PAUSABLE
-    //////////////////////////////////////////////////////////////*/
-    
-    /**
-     * @notice Pause contract
-     */
-    function pause() external onlyOwner {
-        _pause();
-    }
-
-    /**
-     * @notice Unpause contract
-     */
-    function unpause() external onlyOwner {
-        _unpause();
-    }
 
 }

@@ -1,0 +1,37 @@
+{
+  "transactions": [
+    {
+      "hash": "0xf45c17d12a053a063ccdcb08ba0cdcfc6d5d681d9f41700bc6df9713d56a29dd",
+      "transactionType": "CALL",
+      "contractName": "MocaToken",
+      "contractAddress": "0x9cb6dc4B71E285e26cbb0605F94B4031fE04C72c",
+      "function": "approve(address,uint256)",
+      "arguments": [
+        "0x4114eCCadF3b248DA9EEe7D8dF2d3bA6bB02Cbcd",
+        "1000000000000000000"
+      ],
+      "transaction": {
+        "type": "0x02",
+        "from": "0xde05a1abb121113a33eed248bd91ddc254d5e9db",
+        "to": "0x9cb6dc4b71e285e26cbb0605f94b4031fe04c72c",
+        "gas": "0x1090a",
+        "value": "0x0",
+        "data": "0x095ea7b30000000000000000000000004114eccadf3b248da9eee7d8df2d3ba6bb02cbcd0000000000000000000000000000000000000000000000000de0b6b3a7640000",
+        "nonce": "0x58",
+        "accessList": []
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0xf45c17d12a053a063ccdcb08ba0cdcfc6d5d681d9f41700bc6df9713d56a29dd"
+  ],
+  "returns": {},
+  "timestamp": 1709796177,
+  "chain": 11155111,
+  "multi": false,
+  "commit": "0de5090"
+}

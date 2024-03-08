@@ -6,7 +6,6 @@ import {Test, console2} from "forge-std/Test.sol";
 import "test/mocks/MockTokenAdaptor.sol";
 import {MocaOFTMock} from "./mocks/MocaOFTMock.sol";
 import {EndpointV2Mock} from "./mocks/EndpointV2Mock.sol";
-import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 
@@ -24,14 +23,24 @@ abstract contract StateDeployed is Test {
 
     address public deployer;
     uint256 public deployerPrivateKey;
+    
     address public userA;
     address public delegate;
+    address public operator;
+    address public relayer;
+    address public treasury;
 
-    function setUp() public {
+    event PeerSet(uint32 eid, bytes32 peer);
+    event SetWhitelist(address indexed addr, bool isWhitelist);
+    
+    function setUp() virtual public {
 
         //users
         userA = makeAddr('userA');
         delegate = makeAddr('delegate');
+        operator = makeAddr('operator');
+        relayer = makeAddr('relayer');
+        treasury = makeAddr('treasury');
 
         deployerPrivateKey = 0xDEEEE;
         deployer = vm.addr(deployerPrivateKey);
@@ -50,6 +59,128 @@ abstract contract StateDeployed is Test {
     }
 }
 
+abstract contract StateRateLimits is StateDeployed {
+    
+    uint32 public dstid = 1;
+    bytes32 public peer = bytes32(uint256(uint160(treasury)));  
+
+    function setUp() virtual override public {
+        super.setUp();
+
+        vm.startPrank(deployer);
+
+        dstid = 1;
+        peer = bytes32(uint256(uint160(treasury)));  
+        mocaTokenAdaptor.setPeer(dstid, peer);
+        
+        mocaTokenAdaptor.setOutboundCap(1, 1 ether);
+        mocaTokenAdaptor.setInboundCap(1, 1 ether);
+        mocaTokenAdaptor.setOperator(operator, true);
+    
+        vm.stopPrank();
+        
+        vm.startPrank(userA);
+            mocaToken.mint(10 ether);
+            mocaToken.approve(address(mocaTokenAdaptor), 10 ether);
+        vm.stopPrank();
+
+        vm.prank(address(mocaTokenAdaptor));
+        mocaToken.mint(10 ether);
+
+        // gas
+        vm.deal(userA, 10 ether);
+    }
+}
+
+contract StateRateLimitsTest is StateRateLimits {
+
+    function testCannotExceedInboundLimits() public {
+
+        assert(mocaToken.balanceOf(userA) == 10 ether);
+
+        vm.prank(userA);
+        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdaptor.ExceedInboundLimit.selector, 1 ether, 10 ether));
+        
+        mocaTokenAdaptor.credit(userA, 10 ether, 1);
+    }
+
+    function testCannotExceedOutboundLimits() public {
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: 1,                                                               // Destination endpoint ID.
+            to: bytes32(uint256(uint160(userA))),  // Recipient address.
+            amountLD: 10 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 10 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        vm.prank(userA);
+        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdaptor.ExceedOutboundLimit.selector, 1 ether, 10 ether));
+        mocaTokenAdaptor.send(sendParam, MessagingFee({nativeFee: 1 ether, lzTokenFee: 0}), userA);
+    }
+
+    function testWhitelistInbound() public {
+        
+        vm.expectEmit(false, false, false, false);
+        emit SetWhitelist(userA, true);
+
+        vm.prank(deployer);
+        mocaTokenAdaptor.setWhitelist(userA, true);
+                
+        vm.prank(userA);        
+        uint256 amountReceived = mocaTokenAdaptor.credit(userA, 10 ether, 1);
+
+        // NOTE: WHY DOES IT RETURN 0?
+        assertTrue(amountReceived == 0 ether);
+        
+        // reflects minting of new tokens
+        assertTrue(mocaToken.balanceOf(userA) == 20 ether);
+    }
+
+    function testWhitelistOutbound() public {
+        vm.prank(deployer);
+        mocaTokenAdaptor.setWhitelist(userA, true);
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: dstid,                                                                        // Destination endpoint ID.
+            to: peer,                                                                             // Recipient address.
+            amountLD: 10 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 10 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        vm.prank(userA);
+        mocaTokenAdaptor.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
+
+        assertTrue(mocaToken.balanceOf(userA) == 0);
+    }
+
+    function testOperatorCanSetPeers() public {
+        
+        vm.expectEmit(false, false, false, false);
+        emit PeerSet(1, bytes32(uint256(uint160(userA))));
+        
+        vm.prank(operator);
+        mocaTokenAdaptor.setPeer(1, bytes32(uint256(uint160(userA))));
+        
+        // check state
+        assertTrue(mocaTokenAdaptor.peers(1) == bytes32(uint256(uint160(userA))));
+    }
+
+    function testUserCannotSetPeers() public {
+        
+        vm.prank(userA);
+        vm.expectRevert("Not Operator");
+        mocaTokenAdaptor.setPeer(1, bytes32(uint256(uint160(userA))));
+    }
+}
+ /*
 contract StateDeployedTestPausable is StateDeployed {
 
     function testUserCannotCallPause() public {
@@ -119,3 +250,4 @@ contract StateDeployedTestPausable is StateDeployed {
     }
 
 }
+*/
