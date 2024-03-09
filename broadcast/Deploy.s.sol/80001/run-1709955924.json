@@ -1,0 +1,61 @@
+{
+  "transactions": [
+    {
+      "hash": "0x611c0606f96b9020e81c696831ca0d01a11a4a07b765c98b4086baae427ac2ab",
+      "transactionType": "CALL",
+      "contractName": "MocaOFT",
+      "contractAddress": "0x8c979EF6a647c91F56654580f1C740c9f047edb2",
+      "function": "setOutboundCap(uint32,uint256)",
+      "arguments": [
+        "40109",
+        "10000000000000000000"
+      ],
+      "transaction": {
+        "type": "0x02",
+        "from": "0xde05a1abb121113a33eed248bd91ddc254d5e9db",
+        "to": "0x8c979ef6a647c91f56654580f1c740c9f047edb2",
+        "gas": "0x10ff1",
+        "value": "0x0",
+        "data": "0x048849750000000000000000000000000000000000000000000000000000000000009cad0000000000000000000000000000000000000000000000008ac7230489e80000",
+        "nonce": "0x34",
+        "accessList": []
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    },
+    {
+      "hash": "0xe269df61826cadaa69adb2a5806a027f5d54dd03d0918c7931bf9d0e1f5672b0",
+      "transactionType": "CALL",
+      "contractName": "MocaOFT",
+      "contractAddress": "0x8c979EF6a647c91F56654580f1C740c9f047edb2",
+      "function": "setInboundCap(uint32,uint256)",
+      "arguments": [
+        "40109",
+        "10000000000000000000"
+      ],
+      "transaction": {
+        "type": "0x02",
+        "from": "0xde05a1abb121113a33eed248bd91ddc254d5e9db",
+        "to": "0x8c979ef6a647c91f56654580f1c740c9f047edb2",
+        "gas": "0x10ff0",
+        "value": "0x0",
+        "data": "0x256008550000000000000000000000000000000000000000000000000000000000009cad0000000000000000000000000000000000000000000000008ac7230489e80000",
+        "nonce": "0x35",
+        "accessList": []
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0x611c0606f96b9020e81c696831ca0d01a11a4a07b765c98b4086baae427ac2ab",
+    "0xe269df61826cadaa69adb2a5806a027f5d54dd03d0918c7931bf9d0e1f5672b0"
+  ],
+  "returns": {},
+  "timestamp": 1709955924,
+  "chain": 80001,
+  "multi": false,
+  "commit": "0fb095c"
+}

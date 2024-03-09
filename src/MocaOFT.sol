@@ -138,9 +138,9 @@ contract MocaOFT is OFT, EIP3009 {
      * @param srcEid The source chain ID.
      * @return amountReceivedLD The amount of tokens ACTUALLY received in local decimals.
      */
-    function _credit(address to, uint256 amountLD, uint32 srcEid) internal override returns (uint256 amountReceivedLD) {
+    function _credit(address to, uint256 amountLD, uint32 srcEid) internal override returns (uint256) {
         
-        amountReceivedLD = super._credit(to, amountLD, srcEid);
+        uint256 amountReceivedLD = super._credit(to, amountLD, srcEid);
 
         // whiteslisted address have no limits
         if (whitelist[to]) return amountReceivedLD;

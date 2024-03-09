@@ -38,12 +38,12 @@ contract DeployHome is Script, LZState {
         // mint supply to treasury
         string memory name = "TestToken"; 
         string memory symbol = "TT";
-        address treasury = msg.sender;
+        address treasury = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         MocaToken mocaToken = new MocaToken(name, symbol, treasury);
         
         // set msg.sender as delegate and owner
-        address deletate = msg.sender;
-        address owner = msg.sender;
+        address deletate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
+        address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         MocaTokenAdaptor mocaTokenAdaptor = new MocaTokenAdaptor(address(mocaToken), homeLzEP, deletate, owner);
 
         vm.stopBroadcast();
@@ -65,10 +65,10 @@ contract DeployElsewhere is Script, LZState {
         //params
         string memory name = "TestToken"; 
         string memory symbol = "TT";
-        address delegate = msg.sender;
-        address owner = msg.sender;
+        address delegate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
+        address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
 
-        MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db);
+        MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, delegate, owner);
         vm.stopBroadcast();
     }
 }
@@ -81,11 +81,11 @@ contract DeployElsewhere is Script, LZState {
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0x9cb6dc4B71E285e26cbb0605F94B4031fE04C72c);    
-    address public mocaTokenAdaptorAddress = address(0x4114eCCadF3b248DA9EEe7D8dF2d3bA6bB02Cbcd);                     
+    address public mocaTokenAddress = address(0x9B3AD6340a158e6Ce8aC7176eC529D699F40A806);    
+    address public mocaTokenAdaptorAddress = address(0xD890Cd7CFb5e9aeda39Fa4A3FAf07CeB0B015F3c);                     
 
     // remote
-    address public mocaOFTAddress = address(0x8BB305DF680edA14E6b25b975Bf1a8831AcF69ab);
+    address public mocaOFTAddress = address(0x8c979EF6a647c91F56654580f1C740c9f047edb2);
 
     // set contracts
     MocaToken public mocaToken = MocaToken(mocaTokenAddress);
@@ -146,11 +146,11 @@ contract SetGasLimitsHome is State, Script {
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
-        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
         
-        // block sendAndCall: createLzReceiveOption() set gas requirement to be 1M
-        //enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
+        // block sendAndCall: createLzReceiveOption() set gas:0 and value:0 and index:0
+        enforcedOptionParams[1] = EnforcedOptionParam(remoteChainID, 2, hex"000301001303000000000000000000000000000000000000");
 
         mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
@@ -184,8 +184,40 @@ contract SetGasLimitsAway is State, Script {
 
 // forge script script/Deploy.s.sol:SetGasLimitsAway --rpc-url polygon_mumbai --broadcast -vvvv
 
+// ------------------------------------------- Set Rate Limits  -----------------------------------------
 
-// ------------------------------------------- Send sum tokens  -------------------------
+contract SetRateLimitsHome is State, Script {
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        mocaTokenAdaptor.setOutboundCap(remoteChainID, 10 ether);
+        mocaTokenAdaptor.setInboundCap(remoteChainID, 10 ether);
+
+        vm.stopBroadcast();
+    }
+}
+
+// forge script script/Deploy.s.sol:SetRateLimitsHome --rpc-url sepolia --broadcast -vvvv
+
+contract SetRateLimitsRemote is State, Script {
+
+    function run() public {
+
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        mocaOFT.setOutboundCap(homeChainID, 10 ether);
+        mocaOFT.setInboundCap(homeChainID, 10 ether);
+
+        vm.stopBroadcast();
+    }
+}
+
+// forge script script/Deploy.s.sol:SetRateLimitsRemote --rpc-url polygon_mumbai --broadcast -vvvv
+
+// ------------------------------------------- Send sum tokens  -----------------------------------------
 
 // SendParam
 import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
@@ -199,7 +231,7 @@ contract SendTokensToAway is State, Script {
         vm.startBroadcast(deployerPrivateKey);
 
         //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
+        mocaToken.approve(mocaTokenAdaptorAddress, 1 ether);
 
         
         bytes memory nullBytes = new bytes(0);
@@ -209,16 +241,15 @@ contract SendTokensToAway is State, Script {
             amountLD: 1 ether,                                                                   // Amount to send in local decimals        
             minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
             extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
-            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
             oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
         });
 
         // Fetching the native fee for the token send operation
-        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
-        (OFTLimit memory oftLimit, OFTFeeDetail[] memory oftFeeDetails, OFTReceipt memory oftReceipt) = mocaTokenAdaptor.quoteOFT(sendParam);
+        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
 
         // send tokens xchain
-        //mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
 
         vm.stopBroadcast();
     }
@@ -235,12 +266,12 @@ contract SendTokensToHome is State, Script {
         
         bytes memory nullBytes = new bytes(0);
         SendParam memory sendParam = SendParam({
-            dstEid: homeChainID,                                                               // Destination endpoint ID.
+            dstEid: homeChainID,                                                                 // Destination endpoint ID.
             to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),  // Recipient address.
             amountLD: 1 ether,                                                                   // Amount to send in local decimals        
             minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
             extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
-            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
             oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
         });
 
@@ -257,6 +288,49 @@ contract SendTokensToHome is State, Script {
 
 //  forge script script/Deploy.s.sol:SendTokensToHome --rpc-url polygon_mumbai --broadcast -vvvv
 
+
+contract SendTokensToRemotePlusGas is State, Script {
+
+    function run() public {
+
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        //set approval for adaptor to spend tokens
+        mocaToken.approve(mocaTokenAdaptorAddress, 1 ether);
+        
+        // createLzNativeDropOption
+        // gas: 6000000000000000 (amount of native gas to drop in wei)
+        // receiver: 0x000000000000000000000000de05a1abb121113a33eed248bd91ddc254d5e9db (address in bytes32)
+        bytes memory extraOptions = hex"0003010031020000000000000000001550f7dca70000000000000000000000000000de05a1abb121113a33eed248bd91ddc254d5e9db";
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: remoteChainID,                                                                  // Destination endpoint ID.
+            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),     // Recipient address.
+            amountLD: 1 ether,                                                                      // Amount to send in local decimals        
+            minAmountLD: 1 ether,                                                                   // Minimum amount to send in local decimals.
+            extraOptions: extraOptions,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        // Fetching the native fee for the token send operation
+        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+
+        // send tokens xchain
+        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+
+        vm.stopBroadcast();
+    }
+}
+
+//  forge script script/Deploy.s.sol:SendTokensToRemotePlusGas --rpc-url sepolia --broadcast -vvvv
+
+
+// matic before: 1.35870840179732543 MATIC
+// matic after: 1.36470840179732543 MATIC
+// delta of 0.006 matic, as specified by gas dropped.
 
 
 //Note: User bridges tokens.
@@ -292,7 +366,7 @@ contract BreakBridge is State, Script {
 // forge script script/Deploy.s.sol:BreakBridge --rpc-url polygon_mumbai --broadcast -vvvv
 
 
-contract SendAndCall is State, Script {
+contract SendAndCallToRemote is State, Script {
         
     function run() public {
 
@@ -316,13 +390,12 @@ contract SendAndCall is State, Script {
 
         // Fetching the native fee for the token send operation
         MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
-        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteOFT(sendParam);
 
         // send tokens xchain
-        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+       mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
 
         vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:SendAndCall --rpc-url sepolia --broadcast -vvvv
+// forge script script/Deploy.s.sol:SendAndCallToRemote --rpc-url sepolia --broadcast -vvvv

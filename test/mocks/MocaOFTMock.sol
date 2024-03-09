@@ -28,7 +28,7 @@ contract MocaOFTMock is MocaOFT {
     }
 
     function credit(address to, uint256 amountLD, uint32 srcEid) public returns (uint256) {
-        _credit(to, amountLD, srcEid);
+       uint256 amountReceived = _credit(to, amountLD, srcEid);
     }
 
 

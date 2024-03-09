@@ -78,7 +78,6 @@ abstract contract StateDeployed is Test {
 
         // from EIP712.recover()
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", mocaToken.DOMAIN_SEPARATOR(), keccak256(typeHashAndData)));
-
         return digest;
     }
 
@@ -92,7 +91,6 @@ abstract contract StateDeployed is Test {
         );
 
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", mocaToken.DOMAIN_SEPARATOR(), keccak256(typeHashAndData)));
-
         return digest;
     }
 
@@ -115,7 +113,6 @@ abstract contract StateDeployed is Test {
         );
 
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", mocaToken.DOMAIN_SEPARATOR(), keccak256(typeHashAndData)));
-
         return digest;
     }
 
@@ -573,10 +570,10 @@ contract StateRateLimitsTest is StateRateLimits {
         SendParam memory sendParam = SendParam({
             dstEid: 1,                                                               // Destination endpoint ID.
             to: bytes32(uint256(uint160(userA))),  // Recipient address.
-            amountLD: 10 ether,                                                                   // Amount to send in local decimals        
-            minAmountLD: 10 ether,                                                                // Minimum amount to send in local decimals.
+            amountLD: 10 ether,                                                                  // Amount to send in local decimals        
+            minAmountLD: 10 ether,                                                               // Minimum amount to send in local decimals.
             extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
-            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
             oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
         });
 
@@ -596,7 +593,10 @@ contract StateRateLimitsTest is StateRateLimits {
         vm.prank(userA);        
         uint256 amountReceived = mocaToken.credit(userA, 10 ether, 1);
 
-        // NOTE: WHY DOES IT RETURN 0?
+        // NOTE: Returns 0 in foundry tests.
+        //       returns the correct amount of tokens when checking testnet deployment
+        //       testnet event emission was observed to reflect the correct token value.
+        //       see: https://mumbai.polygonscan.com/address/0x8c979ef6a647c91f56654580f1c740c9f047edb2#events
         assertTrue(amountReceived == 0 ether);
         
         // reflects minting of new tokens

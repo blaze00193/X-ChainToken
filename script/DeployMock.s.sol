@@ -80,11 +80,11 @@ contract DeployElsewhere is Script, LZState {
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0xD70eE3ee58394D5daC6Ccc05Bb917081a5CE2ab1);    
-    address public mocaTokenAdaptorAddress = address(0xC8011cB9cfCa55b822E56DD048dc960aBd6424Ce);                     
+    address public mocaTokenAddress = address(0x043B82ad95346a0750BAc710D7E1c5e0Fb654E98);    
+    address public mocaTokenAdaptorAddress = address(0x65B974b35Db51ee52B73391047Bcfb43a462E75D);                     
 
     // remote
-    address public mocaOFTAddress = address(0x7d7b79b59Ffb5c684a8baD8fB1729AAA27883DDe);
+    address public mocaOFTAddress = address(0x2525427274ee7Ba2dBABFfa4C813F1630D7aF504);
 
     // set contracts
     MocaTokenMock public mocaToken = MocaTokenMock(mocaTokenAddress);
@@ -177,6 +177,21 @@ contract SetGasLimitsAway is State, Script {
 
 // forge script script/DeployMock.s.sol:SetGasLimitsAway --rpc-url polygon_mumbai --broadcast -vvvv
 
+contract SetRateLimitsHome is State, Script {
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        mocaTokenAdaptor.setOutboundCap(remoteChainID, 10 ether);
+        mocaTokenAdaptor.setInboundCap(remoteChainID, 10 ether);
+
+        vm.stopBroadcast();
+    }
+}
+
+// forge script script/DeployMock.s.sol:SetRateLimitsHome --rpc-url sepolia --broadcast -vvvv
+
 
 // ------------------------------------------- Send sum tokens  -------------------------
 
@@ -192,7 +207,8 @@ contract SendTokensToAway is State, Script {
         vm.startBroadcast(deployerPrivateKey);
 
         //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
+        mocaToken.approve(mocaTokenAdaptorAddress, 10 ether);
+        //mocaToken.approve(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 0 ether);
 
         
         bytes memory nullBytes = new bytes(0);
@@ -208,7 +224,6 @@ contract SendTokensToAway is State, Script {
 
         // Fetching the native fee for the token send operation
         MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
-        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteOFT(sendParam);
 
         // send tokens xchain
         mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db ));
@@ -217,4 +232,24 @@ contract SendTokensToAway is State, Script {
     }
 }
 
-//  forge script script/Deploy.s.sol:SendTokensToAway --rpc-url sepolia --broadcast -vvvv
+//  forge script script/DeployMock.s.sol:SendTokensToAway --rpc-url sepolia --broadcast -vvvv
+
+
+contract TestTransfer is State, Script {
+
+    function run() public {
+
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        //set approval for adaptor to spend tokens
+        mocaToken.approve(mocaTokenAdaptorAddress, 10 ether);
+        mocaToken.approve(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 10 ether);
+
+        mocaToken.transferFrom(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 0x28B4c6D63C338fE1d82b7Cde98239a33aA5DFca4, 1 ether);
+        
+        vm.stopBroadcast();
+    }
+}
+
+//  forge script script/DeployMock.s.sol:TestTransfer --rpc-url sepolia --broadcast -vvvv
