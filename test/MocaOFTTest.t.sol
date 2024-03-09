@@ -589,6 +589,9 @@ contract StateRateLimitsTest is StateRateLimits {
 
         vm.prank(deployer);
         mocaToken.setWhitelist(userA, true);
+
+        uint256 initialReceiveTokenAmount = mocaToken.receivedTokenAmounts(1);
+        uint256 initialReceiveTimestamp = mocaToken.lastReceivedTimestamps(1);
                 
         vm.prank(userA);        
         uint256 amountReceived = mocaToken.credit(userA, 10 ether, 1);
@@ -601,11 +604,19 @@ contract StateRateLimitsTest is StateRateLimits {
         
         // reflects minting of new tokens
         assertTrue(mocaToken.balanceOf(userA) == 20 ether);
+        
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaToken.receivedTokenAmounts(1) == initialReceiveTokenAmount);
+        assertTrue(mocaToken.lastReceivedTimestamps(1) == initialReceiveTimestamp);
     }
 
+    //Note: executes _debit()
     function testWhitelistOutbound() public {
         vm.prank(deployer);
         mocaToken.setWhitelist(userA, true);
+
+        uint256 initialSentTokenAmount = mocaToken.sentTokenAmounts(dstid);
+        uint256 initialSentTimestamp = mocaToken.lastSentTimestamps(dstid);
 
         bytes memory nullBytes = new bytes(0);
         SendParam memory sendParam = SendParam({
@@ -621,7 +632,12 @@ contract StateRateLimitsTest is StateRateLimits {
         vm.prank(userA);
         mocaToken.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
 
+        // 0, since they were "sent" and therefore burnt/locked
         assertTrue(mocaToken.balanceOf(userA) == 0);
+
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaToken.sentTokenAmounts(dstid) == initialSentTokenAmount);
+        assertTrue(mocaToken.lastSentTimestamps(dstid) == initialSentTimestamp);
     }
 
     function testOperatorCanSetPeers() public {
@@ -740,4 +756,5 @@ contract StateDeployedTestPausable is StateDeployed {
     }
 
 }*/
+
 

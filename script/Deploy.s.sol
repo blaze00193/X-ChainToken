@@ -173,8 +173,8 @@ contract SetGasLimitsAway is State, Script {
         EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
         
-        // block sendAndCall: createLzReceiveOption() set gas requirement to be 1M
-        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
+        // block sendAndCall: createLzReceiveOption() set gas:0 and value:0 and index:0
+        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001303000000000000000000000000000000000000");
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
@@ -399,3 +399,8 @@ contract SendAndCallToRemote is State, Script {
 }
 
 // forge script script/Deploy.s.sol:SendAndCallToRemote --rpc-url sepolia --broadcast -vvvv
+
+
+
+// gas for sendPlusGas: 246,093  - 376,507
+// gas for send: 241,340 - 369,942
