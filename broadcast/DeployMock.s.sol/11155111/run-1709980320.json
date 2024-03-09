@@ -1,0 +1,61 @@
+{
+  "transactions": [
+    {
+      "hash": "0x1a6405d1426bc281099500ae801258fd4a594a207fa7278b126cfcfb64aa72ca",
+      "transactionType": "CALL",
+      "contractName": "MocaTokenAdaptor",
+      "contractAddress": "0x3637a64b2422350f312858bA3EbB9312a5516d23",
+      "function": "setOutboundCap(uint32,uint256)",
+      "arguments": [
+        "40109",
+        "10000000000000000000"
+      ],
+      "transaction": {
+        "type": "0x02",
+        "from": "0xde05a1abb121113a33eed248bd91ddc254d5e9db",
+        "to": "0x3637a64b2422350f312858ba3ebb9312a5516d23",
+        "gas": "0x10fcf",
+        "value": "0x0",
+        "data": "0x048849750000000000000000000000000000000000000000000000000000000000009cad0000000000000000000000000000000000000000000000008ac7230489e80000",
+        "nonce": "0x9e",
+        "accessList": []
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    },
+    {
+      "hash": "0x7d6d014edd6e6199f3c61366cfad1e8912bf03569de6dbf7a85a1218b57fa0d6",
+      "transactionType": "CALL",
+      "contractName": "MocaTokenAdaptor",
+      "contractAddress": "0x3637a64b2422350f312858bA3EbB9312a5516d23",
+      "function": "setInboundCap(uint32,uint256)",
+      "arguments": [
+        "40109",
+        "10000000000000000000"
+      ],
+      "transaction": {
+        "type": "0x02",
+        "from": "0xde05a1abb121113a33eed248bd91ddc254d5e9db",
+        "to": "0x3637a64b2422350f312858ba3ebb9312a5516d23",
+        "gas": "0x10fce",
+        "value": "0x0",
+        "data": "0x256008550000000000000000000000000000000000000000000000000000000000009cad0000000000000000000000000000000000000000000000008ac7230489e80000",
+        "nonce": "0x9f",
+        "accessList": []
+      },
+      "additionalContracts": [],
+      "isFixedGasLimit": false
+    }
+  ],
+  "receipts": [],
+  "libraries": [],
+  "pending": [
+    "0x1a6405d1426bc281099500ae801258fd4a594a207fa7278b126cfcfb64aa72ca",
+    "0x7d6d014edd6e6199f3c61366cfad1e8912bf03569de6dbf7a85a1218b57fa0d6"
+  ],
+  "returns": {},
+  "timestamp": 1709980320,
+  "chain": 11155111,
+  "multi": false,
+  "commit": "4230a88"
+}

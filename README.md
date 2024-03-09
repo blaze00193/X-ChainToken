@@ -33,7 +33,7 @@ The first two will be deployed on Ethereum, while the last one will be deployed 
 ## Why do we opt to use the TokenAdaptor contract?
 
 We felt that having the adaptor would be a useful security bulwark in case of an unexpected event, since it would be limited by approvals set and the liquidity at risk would be purely the tokens locked in it.
-In a way, defence in depth.
+In a way, defense in depth.
 
 ## Gas-less transaction and Permit
 
@@ -87,27 +87,29 @@ This contract will be deployed on all other remote chains, serving as a touchpoi
 
 Please see testnet deployments as a practical reference.
 
-### Pausable
+## Rate limits
 
-The contracts with LZ functionality, MocaOFT and MocaTokenAdaptor, implement Pausable.
+Both MocaOFT and MocaTokenAdaptor implement daily rate limits.
 
-While it is understood that the connectivity between two contracts can be severed via `setPeers`, we want to be anticipatory in dealing with unforeseeable circumstances. Especially so, given that the V2 iteration of LayerZero is fairly new, and any unexpected critical attacks would occur through the LZ vector, therefore also rendering the typical LZ safeguards non-operational.
+- If at least 1 day has passed since the last bridging txn, it is treated as a new period.
+- Transactions within 1 day interval increment the cumulative sum for that period.
+- Each time an outbound/inbound transaction is made, checks ensure that the cumSum for that period does not exceed the period limit.
 
-Given its our first outing with LZ, best to be prepared.
+Putting in place x-chain transfer limits essentially allows us to limit the capital at risk due an exploit arising from an unknown LZ vulnerability.
 
 ## Testnet Deployments
 
 V1: Deploy.s.sol
 
-- MocaToken: https://sepolia.etherscan.io/address/0x9cb6dc4b71e285e26cbb0605f94b4031fe04c72c#readContract
-- MocaTokenAdaptor: https://sepolia.etherscan.io/address/0x4114eccadf3b248da9eee7d8df2d3ba6bb02cbcd#readContract
-- MocaOFT: https://mumbai.polygonscan.com/address/0x8bb305df680eda14e6b25b975bf1a8831acf69ab#events
+- MocaToken: https://sepolia.etherscan.io/address/0x9b3ad6340a158e6ce8ac7176ec529d699f40a806
+- MocaTokenAdaptor: https://sepolia.etherscan.io/address/0xd890cd7cfb5e9aeda39fa4a3faf07ceb0b015f3c
+- MocaOFT: https://mumbai.polygonscan.com/address/0x8c979ef6a647c91f56654580f1c740c9f047edb
 
 V2: DeployMock.s.sol (has unrestricted mint function)
 
-- MocaTokenMock: https://sepolia.etherscan.io/address/0xd70ee3ee58394d5dac6ccc05bb917081a5ce2ab1
-- MocaTokenAdaptor: https://sepolia.etherscan.io/address/0xc8011cb9cfca55b822e56dd048dc960abd6424ce#code
-- MocaOFT: https://mumbai.polygonscan.com/address/0x7d7b79b59ffb5c684a8bad8fb1729aaa27883dde
+- MocaTokenMock: https://sepolia.etherscan.io/address/0x5667424802ef74c314e7adbba6fa669999d8137d
+- MocaTokenAdaptor: https://sepolia.etherscan.io/address/0x3637a64b2422350f312858ba3ebb9312a5516d23
+- MocaOFT: https://mumbai.polygonscan.com/address/0x1fa47369fca4e2bc1054c3783682605604ee92ad
 
 Please feel free to use V2 to make your own testnet transactions - the MocaToken contract in this deployment batch has an unrestricted public mint function.
 V1 does not, and is meant to reflect how an actual deployment would be.

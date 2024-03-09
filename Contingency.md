@@ -12,7 +12,6 @@ With respect to option 1, we could potentially use Tenderly to set up alerts to 
 
 1. Reject/Block a specific message if deemed malicious, by observing its LzSend event.
 2. Disconnect bridge between two contracts if there is an extended malicious campaign.
-3. Pause all/relevant LZ contracts across multiple chains.
 
 # Off-chain transaction monitoring
 

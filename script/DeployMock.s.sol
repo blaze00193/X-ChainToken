@@ -80,11 +80,11 @@ contract DeployElsewhere is Script, LZState {
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0x043B82ad95346a0750BAc710D7E1c5e0Fb654E98);    
-    address public mocaTokenAdaptorAddress = address(0x65B974b35Db51ee52B73391047Bcfb43a462E75D);                     
+    address public mocaTokenAddress = address(0x5667424802Ef74C314e7adbBa6fA669999d8137D);    
+    address public mocaTokenAdaptorAddress = address(0x3637a64b2422350f312858bA3EbB9312a5516d23);                     
 
     // remote
-    address public mocaOFTAddress = address(0x2525427274ee7Ba2dBABFfa4C813F1630D7aF504);
+    address public mocaOFTAddress = address(0x1fA47369FCA4e2bc1054C3783682605604eE92aD);
 
     // set contracts
     MocaTokenMock public mocaToken = MocaTokenMock(mocaTokenAddress);
@@ -145,8 +145,11 @@ contract SetGasLimitsHome is State, Script {
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
-        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
+        
+        // block sendAndCall: createLzReceiveOption() set gas:0 and value:0 and index:0
+        enforcedOptionParams[1] = EnforcedOptionParam(remoteChainID, 2, hex"000301001303000000000000000000000000000000000000");
 
         mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
 
@@ -166,8 +169,11 @@ contract SetGasLimitsAway is State, Script {
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
-        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+        EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
         enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
+        
+        // block sendAndCall: createLzReceiveOption() set gas:0 and value:0 and index:0
+        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001303000000000000000000000000000000000000");
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
 
@@ -192,6 +198,21 @@ contract SetRateLimitsHome is State, Script {
 
 // forge script script/DeployMock.s.sol:SetRateLimitsHome --rpc-url sepolia --broadcast -vvvv
 
+contract SetRateLimitsRemote is State, Script {
+
+    function run() public {
+
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
+
+        mocaOFT.setOutboundCap(homeChainID, 10 ether);
+        mocaOFT.setInboundCap(homeChainID, 10 ether);
+
+        vm.stopBroadcast();
+    }
+}
+
+// forge script script/DeployMock.s.sol:SetRateLimitsRemote --rpc-url polygon_mumbai --broadcast -vvvv
 
 // ------------------------------------------- Send sum tokens  -------------------------
 
@@ -234,8 +255,7 @@ contract SendTokensToAway is State, Script {
 
 //  forge script script/DeployMock.s.sol:SendTokensToAway --rpc-url sepolia --broadcast -vvvv
 
-
-contract TestTransfer is State, Script {
+contract SendTokensToRemotePlusGas is State, Script {
 
     function run() public {
 
@@ -243,13 +263,32 @@ contract TestTransfer is State, Script {
         vm.startBroadcast(deployerPrivateKey);
 
         //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdaptorAddress, 10 ether);
-        mocaToken.approve(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 10 ether);
-
-        mocaToken.transferFrom(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 0x28B4c6D63C338fE1d82b7Cde98239a33aA5DFca4, 1 ether);
+        mocaToken.approve(mocaTokenAdaptorAddress, 1 ether);
         
+        // createLzNativeDropOption
+        // gas: 6000000000000000 (amount of native gas to drop in wei)
+        // receiver: 0x000000000000000000000000de05a1abb121113a33eed248bd91ddc254d5e9db (address in bytes32)
+        bytes memory extraOptions = hex"0003010031020000000000000000001550f7dca70000000000000000000000000000de05a1abb121113a33eed248bd91ddc254d5e9db";
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: remoteChainID,                                                                  // Destination endpoint ID.
+            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),     // Recipient address.
+            amountLD: 1 ether,                                                                      // Amount to send in local decimals        
+            minAmountLD: 1 ether,                                                                   // Minimum amount to send in local decimals.
+            extraOptions: extraOptions,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        // Fetching the native fee for the token send operation
+        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+
+        // send tokens xchain
+        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+
         vm.stopBroadcast();
     }
 }
 
-//  forge script script/DeployMock.s.sol:TestTransfer --rpc-url sepolia --broadcast -vvvv
+//  forge script script/DeployMock.s.sol:SendTokensToRemotePlusGas --rpc-url sepolia --broadcast -vvvv
