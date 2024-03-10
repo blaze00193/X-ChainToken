@@ -70,21 +70,41 @@ contract MocaOFT is OFT, EIP3009 {
                               RATE LIMITS
     //////////////////////////////////////////////////////////////*/
 
-    function setOutboundCap(uint32 chainId, uint256 limit) external onlyOwner {
+    /**
+     * @dev Owner to set the max daily limit on onbound x-chain transfers
+     * @param chainId Destination chainId 
+     * @param limit Daily outbound limit
+     */
+    function setOutboundLimit(uint32 chainId, uint256 limit) external onlyOwner {
         outboundLimits[chainId] = limit;
         emit SetOutboundLimit(chainId, limit);
     }
 
-    function setInboundCap(uint32 chainId, uint256 limit) external onlyOwner {
+    /**
+     * @dev Owner to set the max daily limit on inbound x-chain transfers
+     * @param chainId Destination chainId 
+     * @param limit Daily inbound limit
+     */
+    function setInboundLimit(uint32 chainId, uint256 limit) external onlyOwner {
         inboundLimits[chainId] = limit;
         emit SetInboundLimit(chainId, limit);
     }
 
+    /**
+     * @dev Owner to set whitelisted addresses - limits do not apply to these addresses 
+     * @param addr address
+     * @param isWhitelisted true/false
+     */
     function setWhitelist(address addr, bool isWhitelisted) external onlyOwner {
         whitelist[addr] = isWhitelisted;
         emit SetWhitelist(addr, isWhitelisted);
     }
 
+    /**
+     * @dev Owner to set operator addresses - these addresses can call setPeers
+     * @param addr address
+     * @param isOperator true/false
+     */
     function setOperator(address addr, bool isOperator) external onlyOwner {
         operators[addr] = isOperator;
         emit SetOperator(addr, isOperator);
@@ -119,9 +139,9 @@ contract MocaOFT is OFT, EIP3009 {
             sentTokenAmount = sentTokenAmounts[dstEid] + amountSentLD;
         }
 
-        // check against outboundCap
-        uint256 outboundCap = outboundLimits[dstEid];
-        if (sentTokenAmount > outboundCap) revert ExceedOutboundLimit(outboundCap, sentTokenAmount);
+        // check against outboundLimit
+        uint256 outboundLimit = outboundLimits[dstEid];
+        if (sentTokenAmount > outboundLimit) revert ExceedOutboundLimit(outboundLimit, sentTokenAmount);
 
         // update storage
         sentTokenAmounts[dstEid] = sentTokenAmount;
@@ -158,9 +178,9 @@ contract MocaOFT is OFT, EIP3009 {
             receivedTokenAmount = receivedTokenAmounts[srcEid] + amountReceivedLD;
         }
 
-        // ensure cap not exceeded
-        uint256 inboundCap = inboundLimits[srcEid];
-        if (receivedTokenAmount > inboundCap) revert ExceedInboundLimit(inboundCap, receivedTokenAmount);
+        // ensure limit not exceeded
+        uint256 inboundLimit = inboundLimits[srcEid];
+        if (receivedTokenAmount > inboundLimit) revert ExceedInboundLimit(inboundLimit, receivedTokenAmount);
 
         // update storage
         receivedTokenAmounts[srcEid] = receivedTokenAmount;

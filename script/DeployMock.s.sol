@@ -189,8 +189,8 @@ contract SetRateLimitsHome is State, Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        mocaTokenAdaptor.setOutboundCap(remoteChainID, 10 ether);
-        mocaTokenAdaptor.setInboundCap(remoteChainID, 10 ether);
+        mocaTokenAdaptor.setOutboundLimit(remoteChainID, 10 ether);
+        mocaTokenAdaptor.setInboundLimit(remoteChainID, 10 ether);
 
         vm.stopBroadcast();
     }
@@ -205,8 +205,8 @@ contract SetRateLimitsRemote is State, Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        mocaOFT.setOutboundCap(homeChainID, 10 ether);
-        mocaOFT.setInboundCap(homeChainID, 10 ether);
+        mocaOFT.setOutboundLimit(homeChainID, 10 ether);
+        mocaOFT.setInboundLimit(homeChainID, 10 ether);
 
         vm.stopBroadcast();
     }

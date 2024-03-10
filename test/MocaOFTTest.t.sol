@@ -540,8 +540,8 @@ abstract contract StateRateLimits is StateDeployed {
         peer = bytes32(uint256(uint160(treasury)));  
         mocaToken.setPeer(dstid, peer);
         
-        mocaToken.setOutboundCap(1, 1 ether);
-        mocaToken.setInboundCap(1, 1 ether);
+        mocaToken.setOutboundLimit(1, 1 ether);
+        mocaToken.setInboundLimit(1, 1 ether);
         mocaToken.setOperator(operator, true);
     
         vm.stopPrank();
@@ -659,102 +659,3 @@ contract StateRateLimitsTest is StateRateLimits {
         mocaToken.setPeer(1, bytes32(uint256(uint160(userA))));
     }
 }
-
-/*
-contract StateDeployedTestPausable is StateDeployed {
-
-    function testUserCannotCallPause() public {
-        
-        assertEq(mocaToken.paused(), false);
-        
-        vm.prank(userA);
-        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
-        mocaToken.pause();
-
-        assertEq(mocaToken.paused(), false);
-    } 
-
-    function testOwnerCanCallPause() public {
-        
-        assertEq(mocaToken.paused(), false);
-
-        vm.prank(deployer);
-        mocaToken.pause();
-
-        assertEq(mocaToken.paused(), true);
-
-        vm.prank(deployer);
-        mocaToken.unpause();
-
-        assertEq(mocaToken.paused(), false);
-    }
-
-    function testPausedSend() public {
-
-        vm.prank(deployer);
-        mocaToken.pause();
-
-
-        bytes memory nullBytes = new bytes(0);
-        SendParam memory sendParam = SendParam({
-            dstEid: 1111,
-            to: bytes32(uint256(uint160(address(deployer)))),
-            amountLD: 1 ether,
-            minAmountLD: 1 ether,
-            extraOptions: nullBytes,
-            composeMsg: nullBytes,
-            oftCmd: nullBytes
-        });
-
-        MessagingFee memory messagingFee;
-        messagingFee.lzTokenFee = 0;
-        messagingFee.nativeFee = 0;
-
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        mocaToken.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(deployer));
-    }
-
-    function testPauseLzReceive() public {
-        vm.prank(deployer);
-        mocaToken.pause();
-
-
-        Origin memory _origin;
-        bytes32 _guid;
-        bytes memory _message;
-        address unnamedAddress;  
-        bytes memory unnamedBytes;
-
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        mocaToken.mockLzReceive(_origin, _guid, _message, unnamedAddress, unnamedBytes);
-    }
-
-    function testTransferPaused() public {
-        vm.prank(deployer);
-        mocaToken.pause();
-
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        mocaToken.transfer(userA, 1 ether);
-
-    }
-
-    function testTransferFromPaused() public {
-        vm.prank(deployer);
-        mocaToken.pause();
-        
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        mocaToken.transferFrom(deployer, userA, 1 ether);
-
-    }
-
-    function testApprovePaused() public {
-        vm.prank(deployer);
-        mocaToken.pause();
-        
-        vm.expectRevert(abi.encodeWithSelector(Pausable.EnforcedPause.selector));
-        mocaToken.approve(userA, 1 ether);
-    }
-
-}*/
-
-
