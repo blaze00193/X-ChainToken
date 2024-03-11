@@ -149,3 +149,58 @@ As part of the deployment process I have enforced that users to pay a minimum of
 The DevTools repo is especially useful for reference examples:
 
 - [devtools](https://github.com/LayerZero-Labs/devtools/?tab=readme-ov-file#bootstrapping-an-example-cross-chain-project)
+
+
+## Wallet and Ownership
+
+Both MocaTokenAdaptor and MocaOFT inherit Ownable. The owner address must be specified upon deployment.
+Owner can execute the following functions:
+
+- setPeer
+- setDelegate
+- setOutboundLimit
+- setInboundLimit
+- setWhitelist
+- setOperator
+
+### setPeer
+
+Provides the ability to connect two OFT contract across different chains or break the bridge. The owner can connect and disconnect - an assigned operator can also call this function
+
+### setDelegate
+
+Provides the ability for a delegate to set configs, on behalf of the OApp, directly on the Endpoint contract. This involves changing enforced options wrt to gas limits and msg.value.
+Additionally, delegates can instruct the OFT contracts to burn(clear), to retry certain messages which have failed. A monitoring script that aims to negate malicious messages would have to be operated by a delegate address.
+
+> Please see: https://docs.layerzero.network/contracts/debugging-messages 
+
+### setOutboundLimit and setInboundLimit
+
+Allows setting of incoming and outgoing rate limits with respect to x-chain token transfers. Limits are not global, and are set on a per chain basis. 
+
+### setWhitelist
+
+Owner to set whitelist and revoke addresses - rate limits do not apply to these addresses.
+
+### setOperator
+
+Owner to set and revoke operator addresses - these addresses can call setPeers, to disconnect or connect bridging between contracts.
+
+Beside the owner, the other available privileged roles are:
+
+- Operator
+- Delegate
+
+As mentioned above, an operator can call the function setPeers to break or build a connection between two x-chain contracts. The delegate can block and clear potentially malicious messages.
+Both these roles would be useful from a risk monitoring and management standpoint as they can either terminate a specific message or the entire connection during an emergency.
+To that end, these addresses would have to be paired with an off-chain script that serves as a monitoring solution, sending in a timely transaction to disconnect bridging or reject a specific message. 
+
+They cannot be multi-sigs addresses, as that would result in a delayed reaction. Am exploring Tenderly and Sphinx for a safe execution environment for these private-key enabled scripts.
+
+The owner address however should be a multi-sig, as it has the ability to:
+
+- change whitelisted addresses
+- change rate limits 
+- add/remove operators/delegates
+
+This should be a carefully considered and implemented process, which makes sense for a multi-sig -  a 2 out 3 should suffice. We can use gnosis safe.

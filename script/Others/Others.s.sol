@@ -5,7 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 
 import {MocaToken} from "./../../src/MocaToken.sol";
 import {MocaOFT} from "./../../src/MocaOFT.sol";
-import {MocaTokenAdaptor} from "./../../src/MocaTokenAdaptor.sol";
+import {MocaTokenAdapter} from "./../../src/MocaTokenAdapter.sol";
 
 import "node_modules/@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
@@ -43,14 +43,14 @@ abstract contract State is LZState {
     
     // home
     address public mocaTokenAddress = address(0x9cb6dc4B71E285e26cbb0605F94B4031fE04C72c);    
-    address public mocaTokenAdaptorAddress = address(0x4114eCCadF3b248DA9EEe7D8dF2d3bA6bB02Cbcd);                     
+    address public mocaTokenAdapterAddress = address(0x4114eCCadF3b248DA9EEe7D8dF2d3bA6bB02Cbcd);                     
 
     // remote
     address public mocaOFTAddress = address(0x8BB305DF680edA14E6b25b975Bf1a8831AcF69ab);
 
     // set contracts
     MocaToken public mocaToken = MocaToken(mocaTokenAddress);
-    MocaTokenAdaptor public mocaTokenAdaptor = MocaTokenAdaptor(mocaTokenAdaptorAddress);
+    MocaTokenAdapter public mocaTokenAdapter = MocaTokenAdapter(mocaTokenAdapterAddress);
 
     MocaOFT public mocaOFT = MocaOFT(mocaOFTAddress);
 }
@@ -67,7 +67,7 @@ contract SetRemoteOnHome is State {
         // eid: The endpoint ID for the destination chain the other OFT contract lives on
         // peer: The destination OFT contract address in bytes32 format
         bytes32 peer = bytes32(uint256(uint160(address(mocaOFTAddress))));
-        mocaTokenAdaptor.setPeer(remoteChainID, peer);
+        mocaTokenAdapter.setPeer(remoteChainID, peer);
         
         vm.stopBroadcast();
     }
@@ -84,7 +84,7 @@ contract SetRemoteOnAway is State {
 
         // eid: The endpoint ID for the destination chain the other OFT contract lives on
         // peer: The destination OFT contract address in bytes32 format
-        bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdaptor))));
+        bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdapter))));
         mocaOFT.setPeer(homeChainID, peer);
         
         vm.stopBroadcast();
@@ -113,7 +113,7 @@ contract SetGasLimitsHome is State {
         // block sendAndCall: createLzReceiveOption() set gas requirement to be 1M
         enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
 
-        mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
+        mocaTokenAdapter.setEnforcedOptions(enforcedOptionParams);
 
         vm.stopBroadcast();
     }
@@ -160,7 +160,7 @@ contract SendTokensToAway is State {
         vm.startBroadcast(deployerPrivateKey);
 
         //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
+        mocaToken.approve(mocaTokenAdapterAddress, 1e18);
 
         
         bytes memory nullBytes = new bytes(0);
@@ -175,11 +175,11 @@ contract SendTokensToAway is State {
         });
 
         // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
-        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteOFT(sendParam);
+        MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
+        //MessagingFee memory messagingFee = MocaTokenAdapter.quoteOFT(sendParam);
 
         // send tokens xchain
-        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+        mocaTokenAdapter.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
 
         vm.stopBroadcast();
     }
@@ -229,7 +229,7 @@ contract SendAndCall is State {
         vm.startBroadcast(deployerPrivateKey);
 
         //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdaptorAddress, 1e18);
+        mocaToken.approve(mocaTokenAdapterAddress, 1e18);
 
         
         bytes memory nullBytes = new bytes(0);
@@ -244,11 +244,10 @@ contract SendAndCall is State {
         });
 
         // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
-        //MessagingFee memory messagingFee = mocaTokenAdaptor.quoteOFT(sendParam);
+        MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
 
         // send tokens xchain
-        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+        mocaTokenAdapter.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
 
         vm.stopBroadcast();
     }
@@ -294,7 +293,7 @@ contract RetryMessage is State {
 
             _origin = Origin({
                 srcEid: sepoliaID, 
-                sender: bytes32(uint256(uint160(mocaTokenAdaptorAddress))), // sender on srcCHain. NOT EOA. last addr tt calls the endpoint
+                sender: bytes32(uint256(uint160(mocaTokenAdapterAddress))), // sender on srcCHain. NOT EOA. last addr tt calls the endpoint
                 nonce: 6        // frm LZSCAN, not etherscan
                 });
 

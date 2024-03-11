@@ -9,9 +9,9 @@ import { Origin } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oap
 import { SendParam, MessagingFee, MessagingReceipt, OFTReceipt } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
 
-//Note: Adaptor is only to be deployed on the home chain where the token contract was originally deployed. 
+//Note: Adapter is only to be deployed on the home chain where the token contract was originally deployed. 
 //      Must approve OFT Adapter as a spender of your ERC20 token.
-contract MocaTokenAdaptor is OFTAdapter {
+contract MocaTokenAdapter is OFTAdapter {
 
     // Outbound limits
     mapping(uint32 chainID => uint256 outboundLimit) public outboundLimits;

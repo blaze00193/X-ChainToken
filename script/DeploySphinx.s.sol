@@ -6,7 +6,7 @@ import {Sphinx, Network} from "@sphinx-labs/contracts/SphinxPlugin.sol";
 
 import {MocaToken} from "./../src/MocaToken.sol";
 import {MocaOFT} from "./../src/MocaOFT.sol";
-import {MocaTokenAdaptor} from "./../src/MocaTokenAdaptor.sol";
+import {MocaTokenAdapter} from "./../src/MocaTokenAdapter.sol";
 
 import { IOAppOptionsType3, EnforcedOptionParam } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/interfaces/IOAppOptionsType3.sol";
 import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
@@ -58,7 +58,7 @@ contract Deploy is Script, LZState {
     function run() public sphinx {
         
         MocaToken mocaToken; 
-        MocaTokenAdaptor mocaTokenAdaptor;
+        MocaTokenAdapter mocaTokenAdapter;
         MocaOFT mocaOFT;
 
         // Home: Mumbai
@@ -73,7 +73,7 @@ contract Deploy is Script, LZState {
             // set msg.sender as delegate and owner
             address deletate = msg.sender;
             address owner = msg.sender;
-             mocaTokenAdaptor = new MocaTokenAdaptor(address(mocaToken), homeLzEP, deletate, owner);
+             mocaTokenAdapter = new MocaTokenAdapter(address(mocaToken), homeLzEP, deletate, owner);
         } 
         // Remote: 
         else if (block.chainid == remoteChainId) { 
@@ -92,7 +92,7 @@ contract Deploy is Script, LZState {
 
             //............ Set peer on Home
             bytes32 peer = bytes32(uint256(uint160(address(mocaOFT))));
-            mocaTokenAdaptor.setPeer(remoteChainLZID, peer);
+            mocaTokenAdapter.setPeer(remoteChainLZID, peer);
 
             //............ Set gasLimits on Home
 
@@ -102,12 +102,12 @@ contract Deploy is Script, LZState {
             EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
             enforcedOptionParams[0] = EnforcedOptionParam(remoteChainLZID, 1, hex"00030100110100000000000000000000000000030d40");
 
-            mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
+            mocaTokenAdapter.setEnforcedOptions(enforcedOptionParams);
 
             // .............. Send some tokens
             
             //set approval for adaptor to spend tokens
-            mocaToken.approve(address(mocaTokenAdaptor), 1e18);
+            mocaToken.approve(address(mocaTokenAdapter), 1e18);
 
             // send params
             SendParam memory sendParam = SendParam({
@@ -121,16 +121,16 @@ contract Deploy is Script, LZState {
             });
 
             // Fetching the native fee for the token send operation
-            MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+            MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
 
             // send tokens xchain
-            mocaTokenAdaptor.send(sendParam, messagingFee, payable(msg.sender));
+            mocaTokenAdapter.send(sendParam, messagingFee, payable(msg.sender));
 
         } else if (block.chainid == remoteChainId) {
 
             //............ Set peer on Remote
 
-            bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdaptor))));
+            bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdapter))));
             mocaOFT.setPeer(homeChainLzID, peer);
                        
             //............ Set gasLimits on Remote

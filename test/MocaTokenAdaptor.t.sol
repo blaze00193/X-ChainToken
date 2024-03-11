@@ -17,7 +17,7 @@ import { Origin } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oap
 
 abstract contract StateDeployed is Test {
     
-    MockTokenAdaptor public mocaTokenAdaptor;
+    MockTokenAdapter public mocaTokenAdapter;
     EndpointV2Mock public lzMock;
     MocaOFTMock public mocaToken;
 
@@ -53,7 +53,7 @@ abstract contract StateDeployed is Test {
         
         lzMock = new EndpointV2Mock();
         mocaToken = new MocaOFTMock(name, symbol, address(lzMock), deployer, deployer);
-        mocaTokenAdaptor = new MockTokenAdaptor(address(mocaToken), address(lzMock), delegate, deployer);
+        mocaTokenAdapter = new MockTokenAdapter(address(mocaToken), address(lzMock), delegate, deployer);
 
         vm.stopPrank();
     }
@@ -71,20 +71,20 @@ abstract contract StateRateLimits is StateDeployed {
 
         dstid = 1;
         peer = bytes32(uint256(uint160(treasury)));  
-        mocaTokenAdaptor.setPeer(dstid, peer);
+        mocaTokenAdapter.setPeer(dstid, peer);
         
-        mocaTokenAdaptor.setOutboundLimit(1, 1 ether);
-        mocaTokenAdaptor.setInboundLimit(1, 1 ether);
-        mocaTokenAdaptor.setOperator(operator, true);
+        mocaTokenAdapter.setOutboundLimit(1, 1 ether);
+        mocaTokenAdapter.setInboundLimit(1, 1 ether);
+        mocaTokenAdapter.setOperator(operator, true);
     
         vm.stopPrank();
         
         vm.startPrank(userA);
             mocaToken.mint(10 ether);
-            mocaToken.approve(address(mocaTokenAdaptor), 10 ether);
+            mocaToken.approve(address(mocaTokenAdapter), 10 ether);
         vm.stopPrank();
 
-        vm.prank(address(mocaTokenAdaptor));
+        vm.prank(address(mocaTokenAdapter));
         mocaToken.mint(10 ether);
 
         // gas
@@ -99,9 +99,9 @@ contract StateRateLimitsTest is StateRateLimits {
         assert(mocaToken.balanceOf(userA) == 10 ether);
 
         vm.prank(userA);
-        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdaptor.ExceedInboundLimit.selector, 1 ether, 10 ether));
+        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdapter.ExceedInboundLimit.selector, 1 ether, 10 ether));
         
-        mocaTokenAdaptor.credit(userA, 10 ether, 1);
+        mocaTokenAdapter.credit(userA, 10 ether, 1);
     }
 
     function testCannotExceedOutboundLimits() public {
@@ -118,8 +118,8 @@ contract StateRateLimitsTest is StateRateLimits {
         });
 
         vm.prank(userA);
-        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdaptor.ExceedOutboundLimit.selector, 1 ether, 10 ether));
-        mocaTokenAdaptor.send(sendParam, MessagingFee({nativeFee: 1 ether, lzTokenFee: 0}), userA);
+        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdapter.ExceedOutboundLimit.selector, 1 ether, 10 ether));
+        mocaTokenAdapter.send(sendParam, MessagingFee({nativeFee: 1 ether, lzTokenFee: 0}), userA);
     }
 
     function testWhitelistInbound() public {
@@ -128,13 +128,13 @@ contract StateRateLimitsTest is StateRateLimits {
         emit SetWhitelist(userA, true);
 
         vm.prank(deployer);
-        mocaTokenAdaptor.setWhitelist(userA, true);
+        mocaTokenAdapter.setWhitelist(userA, true);
 
         uint256 initialReceiveTokenAmount = mocaToken.receivedTokenAmounts(1);
         uint256 initialReceiveTimestamp = mocaToken.lastReceivedTimestamps(1);
                 
         vm.prank(userA);        
-        uint256 amountReceived = mocaTokenAdaptor.credit(userA, 10 ether, 1);
+        uint256 amountReceived = mocaTokenAdapter.credit(userA, 10 ether, 1);
 
         // NOTE: WHY DOES IT RETURN 0?
         assertTrue(amountReceived == 0 ether);
@@ -149,7 +149,7 @@ contract StateRateLimitsTest is StateRateLimits {
 
     function testWhitelistOutbound() public {
         vm.prank(deployer);
-        mocaTokenAdaptor.setWhitelist(userA, true);
+        mocaTokenAdapter.setWhitelist(userA, true);
 
         uint256 initialSentTokenAmount = mocaToken.sentTokenAmounts(dstid);
         uint256 initialSentTimestamp = mocaToken.lastSentTimestamps(dstid);
@@ -166,7 +166,7 @@ contract StateRateLimitsTest is StateRateLimits {
         });
 
         vm.prank(userA);
-        mocaTokenAdaptor.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
+        mocaTokenAdapter.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
 
         // 0, since they were "sent" and therefore burnt/locked
         assertTrue(mocaToken.balanceOf(userA) == 0);
@@ -182,16 +182,16 @@ contract StateRateLimitsTest is StateRateLimits {
         emit PeerSet(1, bytes32(uint256(uint160(userA))));
         
         vm.prank(operator);
-        mocaTokenAdaptor.setPeer(1, bytes32(uint256(uint160(userA))));
+        mocaTokenAdapter.setPeer(1, bytes32(uint256(uint160(userA))));
         
         // check state
-        assertTrue(mocaTokenAdaptor.peers(1) == bytes32(uint256(uint160(userA))));
+        assertTrue(mocaTokenAdapter.peers(1) == bytes32(uint256(uint160(userA))));
     }
 
     function testUserCannotSetPeers() public {
         
         vm.prank(userA);
         vm.expectRevert("Not Operator");
-        mocaTokenAdaptor.setPeer(1, bytes32(uint256(uint160(userA))));
+        mocaTokenAdapter.setPeer(1, bytes32(uint256(uint160(userA))));
     }
 }

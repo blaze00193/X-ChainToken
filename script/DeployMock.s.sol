@@ -5,7 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 
 import {MocaTokenMock} from "./../test/mocks/MocaTokenMock.sol";
 import {MocaOFT} from "./../src/MocaOFT.sol";
-import {MocaTokenAdaptor} from "./../src/MocaTokenAdaptor.sol";
+import {MocaTokenAdapter} from "./../src/MocaTokenAdapter.sol";
 
 abstract contract LZState {
     
@@ -44,7 +44,7 @@ contract DeployHome is Script, LZState {
         // set msg.sender as delegate and owner
         address deletate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
-        MocaTokenAdaptor mocaTokenAdaptor = new MocaTokenAdaptor(address(mocaToken), homeLzEP, deletate, owner);
+        MocaTokenAdapter mocaTokenAdapter = new MocaTokenAdapter(address(mocaToken), homeLzEP, deletate, owner);
 
         vm.stopBroadcast();
     }
@@ -81,14 +81,14 @@ abstract contract State is LZState {
     
     // home
     address public mocaTokenAddress = address(0x5667424802Ef74C314e7adbBa6fA669999d8137D);    
-    address public mocaTokenAdaptorAddress = address(0x3637a64b2422350f312858bA3EbB9312a5516d23);                     
+    address public mocaTokenAdapterAddress = address(0x3637a64b2422350f312858bA3EbB9312a5516d23);                     
 
     // remote
     address public mocaOFTAddress = address(0x1fA47369FCA4e2bc1054C3783682605604eE92aD);
 
     // set contracts
     MocaTokenMock public mocaToken = MocaTokenMock(mocaTokenAddress);
-    MocaTokenAdaptor public mocaTokenAdaptor = MocaTokenAdaptor(mocaTokenAdaptorAddress);
+    MocaTokenAdapter public mocaTokenAdapter = MocaTokenAdapter(mocaTokenAdapterAddress);
 
     MocaOFT public mocaOFT = MocaOFT(mocaOFTAddress);
 }
@@ -105,7 +105,7 @@ contract SetRemoteOnHome is State, Script {
         // eid: The endpoint ID for the destination chain the other OFT contract lives on
         // peer: The destination OFT contract address in bytes32 format
         bytes32 peer = bytes32(uint256(uint160(address(mocaOFTAddress))));
-        mocaTokenAdaptor.setPeer(remoteChainID, peer);
+        mocaTokenAdapter.setPeer(remoteChainID, peer);
         
         vm.stopBroadcast();
     }
@@ -122,7 +122,7 @@ contract SetRemoteOnAway is State, Script {
 
         // eid: The endpoint ID for the destination chain the other OFT contract lives on
         // peer: The destination OFT contract address in bytes32 format
-        bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdaptor))));
+        bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdapter))));
         mocaOFT.setPeer(homeChainID, peer);
         
         vm.stopBroadcast();
@@ -151,7 +151,7 @@ contract SetGasLimitsHome is State, Script {
         // block sendAndCall: createLzReceiveOption() set gas:0 and value:0 and index:0
         enforcedOptionParams[1] = EnforcedOptionParam(remoteChainID, 2, hex"000301001303000000000000000000000000000000000000");
 
-        mocaTokenAdaptor.setEnforcedOptions(enforcedOptionParams);
+        mocaTokenAdapter.setEnforcedOptions(enforcedOptionParams);
 
         vm.stopBroadcast();
     }
@@ -189,8 +189,8 @@ contract SetRateLimitsHome is State, Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        mocaTokenAdaptor.setOutboundLimit(remoteChainID, 10 ether);
-        mocaTokenAdaptor.setInboundLimit(remoteChainID, 10 ether);
+        mocaTokenAdapter.setOutboundLimit(remoteChainID, 10 ether);
+        mocaTokenAdapter.setInboundLimit(remoteChainID, 10 ether);
 
         vm.stopBroadcast();
     }
@@ -228,7 +228,7 @@ contract SendTokensToAway is State, Script {
         vm.startBroadcast(deployerPrivateKey);
 
         //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdaptorAddress, 10 ether);
+        mocaToken.approve(mocaTokenAdapterAddress, 10 ether);
         //mocaToken.approve(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 0 ether);
 
         
@@ -244,10 +244,10 @@ contract SendTokensToAway is State, Script {
         });
 
         // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+        MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
 
         // send tokens xchain
-        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db ));
+        mocaTokenAdapter.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db ));
 
         vm.stopBroadcast();
     }
@@ -263,7 +263,7 @@ contract SendTokensToRemotePlusGas is State, Script {
         vm.startBroadcast(deployerPrivateKey);
 
         //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdaptorAddress, 1 ether);
+        mocaToken.approve(mocaTokenAdapterAddress, 1 ether);
         
         // createLzNativeDropOption
         // gas: 6000000000000000 (amount of native gas to drop in wei)
@@ -282,10 +282,10 @@ contract SendTokensToRemotePlusGas is State, Script {
         });
 
         // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaTokenAdaptor.quoteSend(sendParam, false);
+        MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
 
         // send tokens xchain
-        mocaTokenAdaptor.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
+        mocaTokenAdapter.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
 
         vm.stopBroadcast();
     }
