@@ -80,11 +80,11 @@ contract DeployElsewhere is Script, LZState {
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0x5667424802Ef74C314e7adbBa6fA669999d8137D);    
-    address public mocaTokenAdapterAddress = address(0x3637a64b2422350f312858bA3EbB9312a5516d23);                     
+    address public mocaTokenAddress = address(0xacb0Cb4f7aef9889B488A995B0FBC8564eCc36Cb);    
+    address public mocaTokenAdapterAddress = address(0x5348e3EeABE88D801cd6Cd734D9Ed390B9F5cb5C);                     
 
     // remote
-    address public mocaOFTAddress = address(0x1fA47369FCA4e2bc1054C3783682605604eE92aD);
+    address public mocaOFTAddress = address(0xff891133F96a54d2B20F2ff56988C1caDB508D13);
 
     // set contracts
     MocaTokenMock public mocaToken = MocaTokenMock(mocaTokenAddress);
@@ -204,7 +204,7 @@ contract SetRateLimitsRemote is State, Script {
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-
+        
         mocaOFT.setOutboundLimit(homeChainID, 10 ether);
         mocaOFT.setInboundLimit(homeChainID, 10 ether);
 

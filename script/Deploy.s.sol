@@ -81,11 +81,11 @@ contract DeployElsewhere is Script, LZState {
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0x9B3AD6340a158e6Ce8aC7176eC529D699F40A806);    
-    address public mocaTokenAdapterAddress = address(0xD890Cd7CFb5e9aeda39Fa4A3FAf07CeB0B015F3c);                     
+    address public mocaTokenAddress = address(0xA2E400CE40C83270d8369eC971D0fc2e46D5056a);    
+    address public mocaTokenAdapterAddress = address(0x5a9962874acA3b407aCeB14f64C7eF2C6255C880);                     
 
     // remote
-    address public mocaOFTAddress = address(0x8c979EF6a647c91F56654580f1C740c9f047edb2);
+    address public mocaOFTAddress = address(0xaa7A95e597a65EB06DaE4eD54f1b62e0535d9156);
 
     // set contracts
     MocaToken public mocaToken = MocaToken(mocaTokenAddress);

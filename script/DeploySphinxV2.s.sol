@@ -151,7 +151,7 @@ contract DeployV2 is LZState {
             // msgType:1 -> a standard token transfer via send()
             // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
             EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
-            senforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
+            enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
         
             // block sendAndCall: createLzReceiveOption() set gas:0 and value:0 and index:0
             enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001303000000000000000000000000000000000000");
