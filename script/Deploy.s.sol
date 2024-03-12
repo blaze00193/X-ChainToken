@@ -36,8 +36,8 @@ contract DeployHome is Script, LZState {
         vm.startBroadcast(deployerPrivateKey);
 
         // mint supply to treasury
-        string memory name = "TestToken"; 
-        string memory symbol = "TT";
+        string memory name = "Moca"; 
+        string memory symbol = "MOCA";
         address treasury = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         MocaToken mocaToken = new MocaToken(name, symbol, treasury);
         
