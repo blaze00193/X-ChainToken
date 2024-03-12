@@ -43,7 +43,7 @@ abstract contract LZState is Sphinx, Script {
             Network.polygon_mumbai
         ];
 
-        sphinxConfig.projectName = "TestTokenV2";
+        sphinxConfig.projectName = "TestTokenV3";
         sphinxConfig.threshold = 1;
     }
 
@@ -124,34 +124,18 @@ contract DeployV2 is LZState {
             EnforcedOptionParam memory enforcedOptionParam;
             // msgType:1 -> a standard token transfer via send()
             // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
-            EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
+            EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
             enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
-
+            
+            // block sendAndCall: createLzReceiveOption() set gas:0 and value:0 and index:0
+            enforcedOptionParams[1] = EnforcedOptionParam(remoteChainID, 2, hex"000301001303000000000000000000000000000000000000");
+            
             mocaTokenAdapter.setEnforcedOptions(enforcedOptionParams);
 
-            // .............. Send some tokens
-            
-            //set approval for adaptor to spend tokens
-            mocaToken.approve(address(mocaTokenAdapter), 1 ether);
+            //........... Set rateLimits
 
-            // send params
-            bytes memory nullBytes = new bytes(0);
-            SendParam memory sendParam = SendParam({
-                dstEid: remoteChainID,
-                to: bytes32(uint256(uint160(address(msg.sender)))),
-                amountLD: 1 ether,
-                minAmountLD: 1 ether,
-                extraOptions: nullBytes,
-                composeMsg: nullBytes,
-                oftCmd: nullBytes
-            });
-
-            // Fetching the native fee for the token send operation
-            MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
-
-            // send tokens xchain
-            mocaTokenAdapter.send{value: (messagingFee.nativeFee * 2) }(sendParam, messagingFee, payable(msg.sender));
-
+            mocaTokenAdapter.setOutboundLimit(remoteChainID, 10 ether);
+            mocaTokenAdapter.setInboundLimit(remoteChainID, 10 ether);
 
         } else if (block.chainid == 421614) { // Remote
 
@@ -166,10 +150,17 @@ contract DeployV2 is LZState {
             EnforcedOptionParam memory enforcedOptionParam;
             // msgType:1 -> a standard token transfer via send()
             // options: -> A typical lzReceive call will use 200000 gas on most EVM chains 
-            EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](1);
-            enforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
-
+            EnforcedOptionParam[] memory enforcedOptionParams = new EnforcedOptionParam[](2);
+            senforcedOptionParams[0] = EnforcedOptionParam(homeChainID, 1, hex"00030100110100000000000000000000000000030d40");
+        
+            // block sendAndCall: createLzReceiveOption() set gas:0 and value:0 and index:0
+            enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001303000000000000000000000000000000000000");
             mocaOFT.setEnforcedOptions(enforcedOptionParams);      
+
+            //........... Set rateLimits
+
+            mocaOFT.setOutboundLimit(homeChainID, 10 ether);
+            mocaOFT.setInboundLimit(homeChainID, 10 ether);
 
         }
 
@@ -177,3 +168,30 @@ contract DeployV2 is LZState {
 }
 
 // npx sphinx propose script/DeploySphinxV2.s.sol --networks testnets --tc DeployV2
+
+
+/**
+        // SEND SUM TOKENS
+            
+        //set approval for adaptor to spend tokens
+        mocaToken.approve(address(mocaTokenAdapter), 1 ether);
+
+        // send params
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: remoteChainID,
+            to: bytes32(uint256(uint160(address(msg.sender)))),
+            amountLD: 1 ether,
+            minAmountLD: 1 ether,
+            extraOptions: nullBytes,
+            composeMsg: nullBytes,
+            oftCmd: nullBytes
+        });
+
+        // Fetching the native fee for the token send operation
+        MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
+
+        // send tokens xchain
+        mocaTokenAdapter.send{value: (messagingFee.nativeFee * 2) }(sendParam, messagingFee, payable(msg.sender));
+
+ */
