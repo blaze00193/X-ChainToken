@@ -540,8 +540,8 @@ abstract contract StateRateLimits is StateDeployed {
         peer = bytes32(uint256(uint160(treasury)));  
         mocaToken.setPeer(dstid, peer);
         
-        mocaToken.setOutboundLimit(1, 1 ether);
-        mocaToken.setInboundLimit(1, 1 ether);
+        mocaToken.setOutboundLimit(1, 5 ether);
+        mocaToken.setInboundLimit(1, 5 ether);
         mocaToken.setOperator(operator, true);
     
         vm.stopPrank();
@@ -559,7 +559,7 @@ contract StateRateLimitsTest is StateRateLimits {
     function testCannotExceedInboundLimits() public {
         
         vm.prank(userA);
-        vm.expectRevert(abi.encodeWithSelector(MocaOFT.ExceedInboundLimit.selector, 1 ether, 10 ether));
+        vm.expectRevert(abi.encodeWithSelector(MocaOFT.ExceedInboundLimit.selector, 5 ether, 10 ether));
         
         mocaToken.credit(userA, 10 ether, 1);
     }
@@ -578,9 +578,116 @@ contract StateRateLimitsTest is StateRateLimits {
         });
 
         vm.prank(userA);
-        vm.expectRevert(abi.encodeWithSelector(MocaOFT.ExceedOutboundLimit.selector, 1 ether, 10 ether));
+        vm.expectRevert(abi.encodeWithSelector(MocaOFT.ExceedOutboundLimit.selector, 5 ether, 10 ether));
         mocaToken.send(sendParam, MessagingFee({nativeFee: 1 ether, lzTokenFee: 0}), userA);
     }
+
+    function testInboundLimitsWithinPeriod() public {
+        
+        uint256 initialReceiveTokenAmount = mocaToken.receivedTokenAmounts(1);
+        uint256 initialReceiveTimestamp = mocaToken.lastReceivedTimestamps(1);
+        assertTrue(initialReceiveTimestamp == 0);        
+        assertTrue(initialReceiveTokenAmount == 0);  
+
+        vm.warp(5);
+
+        vm.prank(userA);        
+        uint256 amountReceived = mocaToken.credit(userA, 5 ether, 1);
+        assertTrue(amountReceived == 0 ether);
+
+        // reflects minting of new tokens
+        assertTrue(mocaToken.balanceOf(userA) == 15 ether);
+        
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaToken.receivedTokenAmounts(1) == initialReceiveTokenAmount + 5 ether);
+        assertTrue(mocaToken.lastReceivedTimestamps(1) == initialReceiveTimestamp + 5);     
+    }
+
+
+    function testInboundLimitsBeyondPeriod() public {
+        
+        uint256 initialReceiveTokenAmount = mocaToken.receivedTokenAmounts(1);
+        uint256 initialReceiveTimestamp = mocaToken.lastReceivedTimestamps(1);
+        assertTrue(initialReceiveTimestamp == 0);        
+        assertTrue(initialReceiveTokenAmount == 0);        
+
+        vm.warp(84611);
+
+        assertTrue(block.timestamp > initialReceiveTimestamp);
+
+
+        vm.prank(userA);        
+        uint256 amountReceived = mocaToken.credit(userA, 5 ether, 1);
+        assertTrue(amountReceived == 0 ether);
+
+        // reflects minting of new tokens
+        assertTrue(mocaToken.balanceOf(userA) == 15 ether);
+        
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaToken.receivedTokenAmounts(1) == initialReceiveTokenAmount + 5 ether);
+        assertTrue(mocaToken.lastReceivedTimestamps(1) == 84611);     
+    }
+
+    function testOutboundLimitsWithinPeriod() public {
+        
+        uint256 initialSentTokenAmount = mocaToken.sentTokenAmounts(dstid);
+        uint256 initialSentTimestamp = mocaToken.lastSentTimestamps(dstid);
+        assertTrue(initialSentTimestamp == 0);        
+        assertTrue(initialSentTokenAmount == 0); 
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: dstid,                                                                        // Destination endpoint ID.
+            to: peer,                                                                             // Recipient address.
+            amountLD: 5 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 5 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        vm.warp(5);
+
+        vm.prank(userA);
+        mocaToken.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
+
+        assertTrue(mocaToken.balanceOf(userA) == 5 ether);
+
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaToken.sentTokenAmounts(dstid) == initialSentTokenAmount + 5 ether);
+        assertTrue(mocaToken.lastSentTimestamps(dstid) == initialSentTimestamp + 5); 
+    }
+
+    function testOutboundLimitsBeyondPeriod() public {
+        
+        uint256 initialSentTokenAmount = mocaToken.sentTokenAmounts(dstid);
+        uint256 initialSentTimestamp = mocaToken.lastSentTimestamps(dstid);
+        assertTrue(initialSentTimestamp == 0);        
+        assertTrue(initialSentTokenAmount == 0);        
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: dstid,                                                                        // Destination endpoint ID.
+            to: peer,                                                                             // Recipient address.
+            amountLD: 5 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 5 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        vm.warp(84601);
+
+        vm.prank(userA);
+        mocaToken.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
+
+        assertTrue(mocaToken.balanceOf(userA) == 5 ether);
+
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaToken.sentTokenAmounts(dstid) == initialSentTokenAmount + 5 ether);
+        assertTrue(mocaToken.lastSentTimestamps(dstid) == 84601);     
+    }
+
 
     function testWhitelistInbound() public {
         

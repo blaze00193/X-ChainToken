@@ -131,7 +131,6 @@ contract MocaOFT is OFT, EIP3009 {
         uint256 currTimestamp = block.timestamp;
         
         // Round down timestamps to the nearest day. 
-        // If these two values are different, it means at least one full day has passed since the last transaction.
         if ((currTimestamp / (1 days)) > (lastSentTimestamp / (1 days))) {
             sentTokenAmount = amountSentLD;        
         } else {
@@ -171,7 +170,6 @@ contract MocaOFT is OFT, EIP3009 {
         uint256 currTimestamp = block.timestamp;
 
         // Round down timestamps to the nearest day. 
-        // If these two values are different, it means at least one full day has passed since the last transaction.
         if ((currTimestamp / (1 days)) > (lastReceivedTimestamp / (1 days))) {
             receivedTokenAmount = amountReceivedLD;
         } else {

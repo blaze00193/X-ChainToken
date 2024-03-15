@@ -43,7 +43,7 @@ contract DeployHome is Script, LZState {
         
         // set msg.sender as delegate and owner
         address deletate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
-        address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
+        address owner = 0x17bEA8F4ce3a933544b120b736A31a291482480c;
         MocaTokenAdapter mocaTokenAdapter = new MocaTokenAdapter(address(mocaToken), homeLzEP, deletate, owner);
 
         vm.stopBroadcast();
