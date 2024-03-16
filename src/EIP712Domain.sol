@@ -8,8 +8,6 @@ pragma solidity ^0.8.20;
  */
 contract EIP712Domain {
     
-    // was originally DOMAIN_SEPARATOR
-    // but that has been moved to a method so we can override it in V2_2+
     bytes32 internal _DOMAIN_SEPARATOR;
 
     // to prevent signature replay attacks in the event the chain forks

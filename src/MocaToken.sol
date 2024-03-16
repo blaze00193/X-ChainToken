@@ -11,6 +11,7 @@ contract MocaToken is EIP3009 {
 
     constructor(string memory name, string memory symbol, address treasury) ERC20(name, symbol) {
         
+        _DEPLOYMENT_CHAINID = block.chainid; 
         _DOMAIN_SEPARATOR = EIP712.makeDomainSeparator(name, _version);
 
         _mint(treasury, (8_888_888_888 * 1e18));
@@ -23,7 +24,6 @@ contract MocaToken is EIP3009 {
 
     function _domainSeparator() internal override view returns (bytes32) {
         return block.chainid == _DEPLOYMENT_CHAINID ? _DOMAIN_SEPARATOR : EIP712.makeDomainSeparator(name(), _version);
-
     }
 
 

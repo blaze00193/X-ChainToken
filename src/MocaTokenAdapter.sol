@@ -14,14 +14,14 @@ import { SendParam, MessagingFee, MessagingReceipt, OFTReceipt } from "node_modu
 contract MocaTokenAdapter is OFTAdapter {
 
     // Outbound limits
-    mapping(uint32 chainID => uint256 outboundLimit) public outboundLimits;
-    mapping(uint32 chainID => uint256 sentTokenAmount) public sentTokenAmounts;
-    mapping(uint32 chainID => uint256 lastSentTimestamp) public lastSentTimestamps;
+    mapping(uint32 eid => uint256 outboundLimit) public outboundLimits;
+    mapping(uint32 eid => uint256 sentTokenAmount) public sentTokenAmounts;
+    mapping(uint32 eid => uint256 lastSentTimestamp) public lastSentTimestamps;
 
     // Inbound limits
-    mapping(uint32 chainID => uint256 inboundLimit) public inboundLimits;
-    mapping(uint32 chainID => uint256 receivedTokenAmount) public receivedTokenAmounts;
-    mapping(uint32 chainID => uint256 lastReceivedTimestamp) public lastReceivedTimestamps;
+    mapping(uint32 eid => uint256 inboundLimit) public inboundLimits;
+    mapping(uint32 eid => uint256 receivedTokenAmount) public receivedTokenAmounts;
+    mapping(uint32 eid => uint256 lastReceivedTimestamp) public lastReceivedTimestamps;
 
     // If an address is whitelisted, limit checks are skipped
     mapping(address addr => bool isWhitelisted) public whitelist;
@@ -30,8 +30,8 @@ contract MocaTokenAdapter is OFTAdapter {
     mapping(address addr => bool isOperator) public operators;
 
     // events 
-    event SetOutboundLimit(uint32 indexed chainId, uint256 limit);
-    event SetInboundLimit(uint32 indexed chainId, uint256 limit);
+    event SetOutboundLimit(uint32 indexed eid, uint256 limit);
+    event SetInboundLimit(uint32 indexed eid, uint256 limit);
     event SetWhitelist(address indexed addr, bool isWhitelist);
     event SetOperator(address indexed addr, bool isWhitelist);
 
@@ -55,22 +55,22 @@ contract MocaTokenAdapter is OFTAdapter {
 
     /**
      * @dev Owner to set the max daily limit on onbound x-chain transfers
-     * @param chainId Destination chainId 
+     * @param eid Destination eid, as per LayerZero
      * @param limit Daily outbound limit
      */
-    function setOutboundLimit(uint32 chainId, uint256 limit) external onlyOwner {
-        outboundLimits[chainId] = limit;
-        emit SetOutboundLimit(chainId, limit);
+    function setOutboundLimit(uint32 eid, uint256 limit) external onlyOwner {
+        outboundLimits[eid] = limit;
+        emit SetOutboundLimit(eid, limit);
     }
 
     /**
      * @dev Owner to set the max daily limit on inbound x-chain transfers
-     * @param chainId Destination chainId 
+     * @param eid Destination eid, as per LayerZero
      * @param limit Daily inbound limit
      */
-    function setInboundLimit(uint32 chainId, uint256 limit) external onlyOwner {
-        inboundLimits[chainId] = limit;
-        emit SetInboundLimit(chainId, limit);
+    function setInboundLimit(uint32 eid, uint256 limit) external onlyOwner {
+        inboundLimits[eid] = limit;
+        emit SetInboundLimit(eid, limit);
     }
 
     /**
@@ -109,26 +109,26 @@ contract MocaTokenAdapter is OFTAdapter {
         // whitelisted addresses have no limits
         if (whitelist[msg.sender]) return (amountSentLD, amountReceivedLD);
 
-        uint256 sentTokenAmount;
+        uint256 sentTokenAmountsInThisEpoch;
         uint256 lastSentTimestamp = lastSentTimestamps[dstEid];
         uint256 currTimestamp = block.timestamp;
         
         // Round down timestamps to the nearest day. 
-        // If these two values are different, it means at least one full day has passed since the last transaction.
         if ((currTimestamp / (1 days)) > (lastSentTimestamp / (1 days))) {
-            sentTokenAmount = amountSentLD;        
+            sentTokenAmountsInThisEpoch = amountSentLD;   
+            lastSentTimestamps[dstEid] = currTimestamp;     
+            
         } else {
-            // sentTokenAmount = recentSentAmount + incomingSendAmount
-            sentTokenAmount = sentTokenAmounts[dstEid] + amountSentLD;
+            // sentTokenAmountsInThisEpoch = recentSentAmount + incomingSendAmount
+            sentTokenAmountsInThisEpoch = sentTokenAmounts[dstEid] + amountSentLD;
         }
 
         // check against outboundLimit
         uint256 outboundLimit = outboundLimits[dstEid];
-        if (sentTokenAmount > outboundLimit) revert ExceedOutboundLimit(outboundLimit, sentTokenAmount);
+        if (sentTokenAmountsInThisEpoch > outboundLimit) revert ExceedOutboundLimit(outboundLimit, sentTokenAmountsInThisEpoch);
 
         // update storage
-        sentTokenAmounts[dstEid] = sentTokenAmount;
-        lastSentTimestamps[dstEid] = currTimestamp;
+        sentTokenAmounts[dstEid] = sentTokenAmountsInThisEpoch;
 
         return (amountSentLD, amountReceivedLD);
     }
@@ -149,25 +149,25 @@ contract MocaTokenAdapter is OFTAdapter {
         if (whitelist[to]) return amountReceivedLD;
 
 
-        uint256 receivedTokenAmount;
+        uint256 receivedTokenAmountInThisEpoch;
         uint256 lastReceivedTimestamp = lastReceivedTimestamps[srcEid];
         uint256 currTimestamp = block.timestamp;
 
         // Round down timestamps to the nearest day. 
-        // If these two values are different, it means at least one full day has passed since the last transaction.
         if ((currTimestamp / (1 days)) > (lastReceivedTimestamp / (1 days))) {
-            receivedTokenAmount = amountReceivedLD;
+            receivedTokenAmountInThisEpoch = amountReceivedLD;
+            lastReceivedTimestamps[srcEid] = currTimestamp;
+
         } else {
-            receivedTokenAmount = receivedTokenAmounts[srcEid] + amountReceivedLD;
+            receivedTokenAmountInThisEpoch = receivedTokenAmounts[srcEid] + amountReceivedLD;
         }
 
         // ensure limit not exceeded
         uint256 inboundLimit = inboundLimits[srcEid];
-        if (receivedTokenAmount > inboundLimit) revert ExceedInboundLimit(inboundLimit, receivedTokenAmount);
+        if (receivedTokenAmountInThisEpoch > inboundLimit) revert ExceedInboundLimit(inboundLimit, receivedTokenAmountInThisEpoch);
 
         // update storage
-        receivedTokenAmounts[srcEid] = receivedTokenAmount;
-        lastReceivedTimestamps[srcEid] = currTimestamp;
+        receivedTokenAmounts[srcEid] = receivedTokenAmountInThisEpoch;
 
         return amountReceivedLD;
     } 

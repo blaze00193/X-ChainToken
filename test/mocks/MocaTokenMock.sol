@@ -18,4 +18,8 @@ contract MocaTokenMock is MocaToken {
         _mint(msg.sender, amount);
     }
 
+    function deploymentChainId() public returns(uint256) {
+        return _DEPLOYMENT_CHAINID;
+    }
+
 }

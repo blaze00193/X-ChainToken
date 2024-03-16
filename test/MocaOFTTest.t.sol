@@ -129,6 +129,11 @@ contract StateDeployedTest is StateDeployed {
         assertEq(mocaToken.balanceOf(deployer), 0);
     }
 
+    function testDeploymentChainId() public {
+        uint256 _DEPLOYMENT_CHAINID = mocaToken.deploymentChainId();
+        assertTrue(_DEPLOYMENT_CHAINID == block.chainid);
+    }
+
     function testTransferWithAuthorization() public {
 
         // create sender
@@ -556,6 +561,16 @@ abstract contract StateRateLimits is StateDeployed {
 
 contract StateRateLimitsTest is StateRateLimits {
 
+    function testCannotExceedGlobalSupply() public {
+        vm.startPrank(userA);
+        mocaToken.mint(8_888_888_888 ether);
+
+        vm.expectRevert(abi.encodeWithSelector(MocaOFT.ExceedGlobalSupply.selector, (8_888_888_888 ether + 10 ether), 9_888_888_888 ether));
+        mocaToken.credit(userA, 9_888_888_888 ether, 1);
+
+        vm.stopPrank();
+    }
+    
     function testCannotExceedInboundLimits() public {
         
         vm.prank(userA);
@@ -582,6 +597,7 @@ contract StateRateLimitsTest is StateRateLimits {
         mocaToken.send(sendParam, MessagingFee({nativeFee: 1 ether, lzTokenFee: 0}), userA);
     }
 
+
     function testInboundLimitsWithinPeriod() public {
         
         uint256 initialReceiveTokenAmount = mocaToken.receivedTokenAmounts(1);
@@ -600,9 +616,8 @@ contract StateRateLimitsTest is StateRateLimits {
         
         // check timestamp and cumulative received amount UNCHANGED. 
         assertTrue(mocaToken.receivedTokenAmounts(1) == initialReceiveTokenAmount + 5 ether);
-        assertTrue(mocaToken.lastReceivedTimestamps(1) == initialReceiveTimestamp + 5);     
+        assertTrue(mocaToken.lastReceivedTimestamps(1) == initialReceiveTimestamp);     
     }
-
 
     function testInboundLimitsBeyondPeriod() public {
         
@@ -611,7 +626,7 @@ contract StateRateLimitsTest is StateRateLimits {
         assertTrue(initialReceiveTimestamp == 0);        
         assertTrue(initialReceiveTokenAmount == 0);        
 
-        vm.warp(84611);
+        vm.warp(86400);
 
         assertTrue(block.timestamp > initialReceiveTimestamp);
 
@@ -623,9 +638,8 @@ contract StateRateLimitsTest is StateRateLimits {
         // reflects minting of new tokens
         assertTrue(mocaToken.balanceOf(userA) == 15 ether);
         
-        // check timestamp and cumulative received amount UNCHANGED. 
         assertTrue(mocaToken.receivedTokenAmounts(1) == initialReceiveTokenAmount + 5 ether);
-        assertTrue(mocaToken.lastReceivedTimestamps(1) == 84611);     
+        assertTrue(mocaToken.lastReceivedTimestamps(1) == 86400);     
     }
 
     function testOutboundLimitsWithinPeriod() public {
@@ -655,7 +669,7 @@ contract StateRateLimitsTest is StateRateLimits {
 
         // check timestamp and cumulative received amount UNCHANGED. 
         assertTrue(mocaToken.sentTokenAmounts(dstid) == initialSentTokenAmount + 5 ether);
-        assertTrue(mocaToken.lastSentTimestamps(dstid) == initialSentTimestamp + 5); 
+        assertTrue(mocaToken.lastSentTimestamps(dstid) == initialSentTimestamp); 
     }
 
     function testOutboundLimitsBeyondPeriod() public {
@@ -676,7 +690,7 @@ contract StateRateLimitsTest is StateRateLimits {
             oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
         });
 
-        vm.warp(84601);
+        vm.warp(86400);
 
         vm.prank(userA);
         mocaToken.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
@@ -685,7 +699,7 @@ contract StateRateLimitsTest is StateRateLimits {
 
         // check timestamp and cumulative received amount UNCHANGED. 
         assertTrue(mocaToken.sentTokenAmounts(dstid) == initialSentTokenAmount + 5 ether);
-        assertTrue(mocaToken.lastSentTimestamps(dstid) == 84601);     
+        assertTrue(mocaToken.lastSentTimestamps(dstid) == 86400);     
     }
 
 

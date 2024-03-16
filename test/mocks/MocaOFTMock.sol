@@ -15,9 +15,11 @@ contract MocaOFTMock is MocaOFT {
      */
     constructor(string memory _name, string memory _symbol, address _lzEndpoint, address _delegate, address _owner) 
         MocaOFT(_name, _symbol, _lzEndpoint, _delegate, _owner){
-        
     } 
 
+    function deploymentChainId() public returns(uint256) {
+        return _DEPLOYMENT_CHAINID;
+    }
     
     function mint(uint256 amount) public {
         _mint(msg.sender, amount);
@@ -30,7 +32,6 @@ contract MocaOFTMock is MocaOFT {
     function credit(address to, uint256 amountLD, uint32 srcEid) public returns (uint256) {
        uint256 amountReceived = _credit(to, amountLD, srcEid);
     }
-
 
    function _lzSend(uint32 _dstEid, bytes memory _message, bytes memory _options, MessagingFee memory _fee, address _refundAddress) internal override returns (MessagingReceipt memory receipt) {}
 

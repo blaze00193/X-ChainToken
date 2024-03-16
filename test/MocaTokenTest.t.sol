@@ -115,6 +115,11 @@ contract StateDeployedTest is StateDeployed {
 
     }
 
+    function testDeploymentChainId() public {
+        uint256 _DEPLOYMENT_CHAINID = mocaToken.deploymentChainId();
+        assertTrue(_DEPLOYMENT_CHAINID == block.chainid);
+    }
+
     function testTransferWithAuthorization() public {
 
         // create sender

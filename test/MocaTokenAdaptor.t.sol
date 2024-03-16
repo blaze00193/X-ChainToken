@@ -4,8 +4,9 @@ pragma solidity ^0.8.22;
 import {Test, console2} from "forge-std/Test.sol";
 
 import "test/mocks/MockTokenAdaptor.sol";
-import {MocaOFTMock} from "./mocks/MocaOFTMock.sol";
-import {EndpointV2Mock} from "./mocks/EndpointV2Mock.sol";
+//import { MocaOFTMock } from "./mocks/MocaOFTMock.sol";
+import { MocaTokenMock } from "./mocks/MocaTokenMock.sol";
+import { EndpointV2Mock } from "./mocks/EndpointV2Mock.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 
@@ -19,7 +20,7 @@ abstract contract StateDeployed is Test {
     
     MockTokenAdapter public mocaTokenAdapter;
     EndpointV2Mock public lzMock;
-    MocaOFTMock public mocaToken;
+    MocaTokenMock public mocaToken;
 
     address public deployer;
     uint256 public deployerPrivateKey;
@@ -52,7 +53,7 @@ abstract contract StateDeployed is Test {
         string memory symbol = "TT";
         
         lzMock = new EndpointV2Mock();
-        mocaToken = new MocaOFTMock(name, symbol, address(lzMock), deployer, deployer);
+        mocaToken = new MocaTokenMock(name, symbol, treasury);
         mocaTokenAdapter = new MockTokenAdapter(address(mocaToken), address(lzMock), delegate, deployer);
 
         vm.stopPrank();
@@ -61,6 +62,7 @@ abstract contract StateDeployed is Test {
 
 abstract contract StateRateLimits is StateDeployed {
     
+    uint32 public srcid = 1;
     uint32 public dstid = 1;
     bytes32 public peer = bytes32(uint256(uint160(treasury)));  
 
@@ -73,8 +75,8 @@ abstract contract StateRateLimits is StateDeployed {
         peer = bytes32(uint256(uint160(treasury)));  
         mocaTokenAdapter.setPeer(dstid, peer);
         
-        mocaTokenAdapter.setOutboundLimit(1, 1 ether);
-        mocaTokenAdapter.setInboundLimit(1, 1 ether);
+        mocaTokenAdapter.setOutboundLimit(1, 5 ether);
+        mocaTokenAdapter.setInboundLimit(1, 5 ether);
         mocaTokenAdapter.setOperator(operator, true);
     
         vm.stopPrank();
@@ -99,7 +101,7 @@ contract StateRateLimitsTest is StateRateLimits {
         assert(mocaToken.balanceOf(userA) == 10 ether);
 
         vm.prank(userA);
-        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdapter.ExceedInboundLimit.selector, 1 ether, 10 ether));
+        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdapter.ExceedInboundLimit.selector, 5 ether, 10 ether));
         
         mocaTokenAdapter.credit(userA, 10 ether, 1);
     }
@@ -118,9 +120,115 @@ contract StateRateLimitsTest is StateRateLimits {
         });
 
         vm.prank(userA);
-        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdapter.ExceedOutboundLimit.selector, 1 ether, 10 ether));
+        vm.expectRevert(abi.encodeWithSelector(MocaTokenAdapter.ExceedOutboundLimit.selector, 5 ether, 10 ether));
         mocaTokenAdapter.send(sendParam, MessagingFee({nativeFee: 1 ether, lzTokenFee: 0}), userA);
     }
+
+    function testInboundLimitsWithinPeriod() public {
+        
+        uint256 initialReceiveTokenAmount = mocaTokenAdapter.receivedTokenAmounts(1);
+        uint256 initialReceiveTimestamp = mocaTokenAdapter.lastReceivedTimestamps(1);
+        assertTrue(initialReceiveTimestamp == 0);        
+        assertTrue(initialReceiveTokenAmount == 0);  
+
+        vm.warp(5);
+
+        vm.prank(userA);        
+        uint256 amountReceived = mocaTokenAdapter.credit(userA, 5 ether, 1);
+        assertTrue(amountReceived == 0 ether);
+
+        // reflects minting of new tokens
+        assertTrue(mocaToken.balanceOf(userA) == 15 ether);
+        
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaTokenAdapter.receivedTokenAmounts(1) == initialReceiveTokenAmount + 5 ether);
+        assertTrue(mocaTokenAdapter.lastReceivedTimestamps(1) == initialReceiveTimestamp);     
+    }
+
+    function testInboundLimitsBeyondPeriod() public {
+        
+        uint256 initialReceiveTokenAmount = mocaTokenAdapter.receivedTokenAmounts(srcid);
+        uint256 initialReceiveTimestamp = mocaTokenAdapter.lastReceivedTimestamps(srcid);
+        assertTrue(initialReceiveTimestamp == 0);        
+        assertTrue(initialReceiveTokenAmount == 0);        
+
+        vm.warp(86401);
+
+        assertTrue(block.timestamp > initialReceiveTimestamp);
+        assertTrue(mocaTokenAdapter.inboundLimits(srcid) == 5 ether);
+
+        vm.prank(userA);        
+        uint256 amountReceived = mocaTokenAdapter.credit(userA, 5 ether, 1);
+        assertTrue(amountReceived == 0 ether);
+
+        // reflects minting of new tokens
+        assertTrue(mocaToken.balanceOf(userA) == 15 ether);
+        
+        assertTrue(mocaTokenAdapter.receivedTokenAmounts(srcid) == initialReceiveTokenAmount + 5 ether);
+        assertTrue(mocaTokenAdapter.lastReceivedTimestamps(srcid) == 86401);     
+    }
+
+    function testOutboundLimitsWithinPeriod() public {
+        
+        uint256 initialSentTokenAmount = mocaTokenAdapter.sentTokenAmounts(dstid);
+        uint256 initialSentTimestamp = mocaTokenAdapter.lastSentTimestamps(dstid);
+        assertTrue(initialSentTimestamp == 0);        
+        assertTrue(initialSentTokenAmount == 0); 
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: dstid,                                                                        // Destination endpoint ID.
+            to: peer,                                                                             // Recipient address.
+            amountLD: 5 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 5 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        vm.warp(5);
+
+        vm.prank(userA);
+        mocaTokenAdapter.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
+
+        assertTrue(mocaToken.balanceOf(userA) == 5 ether);
+
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaTokenAdapter.sentTokenAmounts(dstid) == initialSentTokenAmount + 5 ether);
+        assertTrue(mocaTokenAdapter.lastSentTimestamps(dstid) == initialSentTimestamp); 
+    }
+
+    function testOutboundLimitsBeyondPeriod() public {
+        
+        uint256 initialSentTokenAmount = mocaTokenAdapter.sentTokenAmounts(dstid);
+        uint256 initialSentTimestamp = mocaTokenAdapter.lastSentTimestamps(dstid);
+        assertTrue(initialSentTimestamp == 0);        
+        assertTrue(initialSentTokenAmount == 0);        
+
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: dstid,                                                                        // Destination endpoint ID.
+            to: peer,                                                                             // Recipient address.
+            amountLD: 5 ether,                                                                   // Amount to send in local decimals        
+            minAmountLD: 5 ether,                                                                // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: nullBytes,                                                                // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        vm.warp(86400);
+
+        vm.prank(userA);
+        mocaTokenAdapter.send(sendParam, MessagingFee({nativeFee: 0 ether, lzTokenFee: 0}), payable(userA));
+
+        assertTrue(mocaToken.balanceOf(userA) == 5 ether);
+
+        // check timestamp and cumulative received amount UNCHANGED. 
+        assertTrue(mocaTokenAdapter.sentTokenAmounts(dstid) == initialSentTokenAmount + 5 ether);
+        assertTrue(mocaTokenAdapter.lastSentTimestamps(dstid) == 86400);     
+    }
+
+
 
     function testWhitelistInbound() public {
         
@@ -130,8 +238,8 @@ contract StateRateLimitsTest is StateRateLimits {
         vm.prank(deployer);
         mocaTokenAdapter.setWhitelist(userA, true);
 
-        uint256 initialReceiveTokenAmount = mocaToken.receivedTokenAmounts(1);
-        uint256 initialReceiveTimestamp = mocaToken.lastReceivedTimestamps(1);
+        uint256 initialReceiveTokenAmount = mocaTokenAdapter.receivedTokenAmounts(1);
+        uint256 initialReceiveTimestamp = mocaTokenAdapter.lastReceivedTimestamps(1);
                 
         vm.prank(userA);        
         uint256 amountReceived = mocaTokenAdapter.credit(userA, 10 ether, 1);
@@ -143,16 +251,16 @@ contract StateRateLimitsTest is StateRateLimits {
         assertTrue(mocaToken.balanceOf(userA) == 20 ether);
 
         // check timestamp and cumulative received amount UNCHANGED. 
-        assertTrue(mocaToken.receivedTokenAmounts(1) == initialReceiveTokenAmount);
-        assertTrue(mocaToken.lastReceivedTimestamps(1) == initialReceiveTimestamp);
+        assertTrue(mocaTokenAdapter.receivedTokenAmounts(1) == initialReceiveTokenAmount);
+        assertTrue(mocaTokenAdapter.lastReceivedTimestamps(1) == initialReceiveTimestamp);
     }
 
     function testWhitelistOutbound() public {
         vm.prank(deployer);
         mocaTokenAdapter.setWhitelist(userA, true);
 
-        uint256 initialSentTokenAmount = mocaToken.sentTokenAmounts(dstid);
-        uint256 initialSentTimestamp = mocaToken.lastSentTimestamps(dstid);
+        uint256 initialSentTokenAmount = mocaTokenAdapter.sentTokenAmounts(dstid);
+        uint256 initialSentTimestamp = mocaTokenAdapter.lastSentTimestamps(dstid);
 
         bytes memory nullBytes = new bytes(0);
         SendParam memory sendParam = SendParam({
@@ -172,8 +280,8 @@ contract StateRateLimitsTest is StateRateLimits {
         assertTrue(mocaToken.balanceOf(userA) == 0);
 
         // check timestamp and cumulative received amount UNCHANGED. 
-        assertTrue(mocaToken.sentTokenAmounts(dstid) == initialSentTokenAmount);
-        assertTrue(mocaToken.lastSentTimestamps(dstid) == initialSentTimestamp);
+        assertTrue(mocaTokenAdapter.sentTokenAmounts(dstid) == initialSentTokenAmount);
+        assertTrue(mocaTokenAdapter.lastSentTimestamps(dstid) == initialSentTimestamp);
     }
 
     function testOperatorCanSetPeers() public {
