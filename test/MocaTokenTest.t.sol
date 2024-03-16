@@ -120,6 +120,128 @@ contract StateDeployedTest is StateDeployed {
         assertTrue(_DEPLOYMENT_CHAINID == block.chainid);
     }
 
+    function testDomainSeparator() public {
+        string memory name = "TestToken"; 
+        string memory symbol = "TT";
+        
+        bytes32 domainSeparator = mocaToken.makeDomainSeperator(name, "v1", block.chainid);
+        assertTrue(domainSeparator == mocaToken.domainSeparator());
+    }
+
+    function testCannotTransferWithInvalidSignature() public {
+
+        // create sender
+        uint256 senderPrivateKey = 0xA11CE;
+        address sender = vm.addr(senderPrivateKey);
+        
+        // mint to sender
+        vm.prank(sender);
+        mocaToken.mint(1 ether);
+
+        // SigParams
+        address from = sender;
+        address to = userA;
+        uint256 value = 1 ether;
+        uint256 validAfter = 1; 
+        uint256 validBefore = block.timestamp + 1000;
+        bytes32 nonce = hex"00";
+
+        // prepare transferHash
+        bytes32 digest = _getTransferHash(from, to, value, validAfter, validBefore, nonce);
+
+        // sign 
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(senderPrivateKey, digest);
+
+        // execute gasless transfer. signature relayed by 3rd party
+        vm.warp(5);
+        vm.prank(relayer);
+
+        // check that nonce is false
+        bool isFalse = mocaToken.authorizationState(from, nonce);
+        assertEq(isFalse, false);
+
+        // will revert on invalid signature
+        vm.expectRevert("Invalid signature");
+        mocaToken.transferWithAuthorization(from, to, 10 ether, validAfter, validBefore, nonce, v, r, s);
+
+    }
+
+    function testCannotTransferIfAfterThanValidBefore() public {
+
+        // create sender
+        uint256 senderPrivateKey = 0xA11CE;
+        address sender = vm.addr(senderPrivateKey);
+        
+        // mint to sender
+        vm.prank(sender);
+        mocaToken.mint(1 ether);
+
+        // SigParams
+        address from = sender;
+        address to = userA;
+        uint256 value = 1 ether;
+        uint256 validAfter = 1; 
+        uint256 validBefore = block.timestamp + 1000;
+        bytes32 nonce = hex"00";
+
+        // prepare transferHash
+        bytes32 digest = _getTransferHash(from, to, value, validAfter, validBefore, nonce);
+
+        // sign 
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(senderPrivateKey, digest);
+
+        // execute gasless transfer. signature relayed by 3rd party
+        vm.warp(validBefore + 10);
+        vm.prank(relayer);
+
+        // check that nonce is false
+        bool isFalse = mocaToken.authorizationState(from, nonce);
+        assertEq(isFalse, false);
+
+        // will revert on invalid signature
+        vm.expectRevert("Authorization is expired");
+        mocaToken.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
+
+    }
+
+    function testCannotTransferIfBeforeThanValidAfter() public {
+
+        // create sender
+        uint256 senderPrivateKey = 0xA11CE;
+        address sender = vm.addr(senderPrivateKey);
+        
+        // mint to sender
+        vm.prank(sender);
+        mocaToken.mint(1 ether);
+
+        // SigParams
+        address from = sender;
+        address to = userA;
+        uint256 value = 1 ether;
+        uint256 validAfter = 1; 
+        uint256 validBefore = block.timestamp + 1000;
+        bytes32 nonce = hex"00";
+
+        // prepare transferHash
+        bytes32 digest = _getTransferHash(from, to, value, validAfter, validBefore, nonce);
+
+        // sign 
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(senderPrivateKey, digest);
+
+        // execute gasless transfer. signature relayed by 3rd party
+        vm.warp(validAfter - 1);
+        vm.prank(relayer);
+
+        // check that nonce is false
+        bool isFalse = mocaToken.authorizationState(from, nonce);
+        assertEq(isFalse, false);
+
+        // will revert on invalid signature
+        vm.expectRevert("Authorization is not yet valid");
+        mocaToken.transferWithAuthorization(from, to, value, validAfter, validBefore, nonce, v, r, s);
+
+    }
+
     function testTransferWithAuthorization() public {
 
         // create sender

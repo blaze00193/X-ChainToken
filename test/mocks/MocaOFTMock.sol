@@ -20,6 +20,26 @@ contract MocaOFTMock is MocaOFT {
     function deploymentChainId() public returns(uint256) {
         return _DEPLOYMENT_CHAINID;
     }
+
+    function domainSeparator() public returns (bytes32) {
+        return _domainSeparator();
+    }
+
+    function makeDomainSeperator(string memory name, string memory version, uint256 chainId) public returns (bytes32) {
+
+        return
+            keccak256(
+                abi.encode(
+                    // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+                    0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f,
+                    keccak256(bytes(name)),
+                    keccak256(bytes(version)),
+                    chainId,
+                    address(this)
+                )
+            );
+    }
+    
     
     function mint(uint256 amount) public {
         _mint(msg.sender, amount);
