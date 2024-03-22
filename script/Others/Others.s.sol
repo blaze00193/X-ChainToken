@@ -111,7 +111,7 @@ contract SetGasLimitsHome is State {
         enforcedOptionParams[0] = EnforcedOptionParam(remoteChainID, 1, hex"00030100110100000000000000000000000000030d40");
         
         // block sendAndCall: createLzReceiveOption() set gas requirement to be 1M
-        enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001101000000000000000000000000000f4240");
+        enforcedOptionParams[1] = EnforcedOptionParam(remoteChainID, 2, hex"000301001101000000000000000000000000000f4240");
 
         mocaTokenAdapter.setEnforcedOptions(enforcedOptionParams);
 
