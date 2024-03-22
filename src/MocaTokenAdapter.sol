@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { OFTAdapter } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFTAdapter.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 // LZ Structs
 import { Origin } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
@@ -11,7 +12,7 @@ import { SendParam, MessagingFee, MessagingReceipt, OFTReceipt } from "node_modu
 
 //Note: Adapter is only to be deployed on the home chain where the token contract was originally deployed. 
 //      Must approve OFT Adapter as a spender of your ERC20 token.
-contract MocaTokenAdapter is OFTAdapter {
+contract MocaTokenAdapter is OFTAdapter, Ownable2Step {
 
     // Outbound limits
     mapping(uint32 eid => uint256 outboundLimit) public outboundLimits;
@@ -99,7 +100,7 @@ contract MocaTokenAdapter is OFTAdapter {
      * @dev Only an operator or owner of the OApp can call this function.
      */
     function resetPeer(uint32 eid) external {
-        require(operators[msg.sender] == true || msg.sender == owner(), "Not Operator");
+        require(operators[msg.sender] || msg.sender == owner(), "Not Operator");
 
         peers[eid] = bytes32(0);
         emit PeerSet(eid, bytes32(0));
@@ -205,5 +206,25 @@ contract MocaTokenAdapter is OFTAdapter {
 
         return amountReceivedLD;
     } 
+
+    /*//////////////////////////////////////////////////////////////
+                              OWNABLE2STEP
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Starts the ownership transfer of the contract to a new account. Replaces the pending transfer if there is one.
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public override(Ownable, Ownable2Step) onlyOwner {
+        Ownable2Step.transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`) and deletes any pending owner.
+     * Internal function without access restriction.
+     */
+    function _transferOwnership(address newOwner) internal override(Ownable, Ownable2Step) {
+        Ownable2Step._transferOwnership(newOwner);
+    }
 
 }

@@ -92,6 +92,27 @@ abstract contract StateRateLimits is StateDeployed {
 
 contract StateRateLimitsTest is StateRateLimits {
 
+    function testUserCannotTransferOwnership() public {
+        
+        vm.prank(userA);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
+        mocaTokenAdapter.transferOwnership(userA);
+    }
+
+    function testOwnerTransferOwnership() public {
+        vm.prank(deployer);
+        mocaTokenAdapter.transferOwnership(treasury);
+
+        // check pending owner
+        assert(mocaTokenAdapter.pendingOwner() == treasury);
+
+        // accept ownership
+        vm.prank(treasury);
+        mocaTokenAdapter.acceptOwnership();
+
+        assert(mocaTokenAdapter.owner() == treasury);
+    }
+
     function testCannotExceedInboundLimits() public {
 
         assert(mocaToken.balanceOf(userA) == 10 ether);

@@ -142,6 +142,27 @@ contract StateDeployedTest is StateDeployed {
         assertTrue(domainSeparator == mocaToken.domainSeparator());
     }
 
+    function testUserCannotTransferOwnership() public {
+        
+        vm.prank(userA);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, userA));
+        mocaToken.transferOwnership(userA);
+    }
+
+    function testOwnerTransferOwnership() public {
+        vm.prank(deployer);
+        mocaToken.transferOwnership(treasury);
+
+        // check pending owner
+        assert(mocaToken.pendingOwner() == treasury);
+
+        // accept ownership
+        vm.prank(treasury);
+        mocaToken.acceptOwnership();
+
+        assert(mocaToken.owner() == treasury);
+    }
+
     function testCannotTransferWithInvalidSignature() public {
 
         // create sender
@@ -969,4 +990,4 @@ contract StateRateRestTest is StateRateReset {
         assertTrue(mocaToken.sentTokenAmounts(eid) == 0);
     }
 
-} 
+}

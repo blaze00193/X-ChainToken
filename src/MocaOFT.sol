@@ -3,6 +3,7 @@ pragma solidity 0.8.22;
 
 import { OFT } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oft/OFT.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import { EIP3009 } from "./EIP3009.sol";
 import { EIP712 } from "./utils/EIP712.sol";
@@ -14,7 +15,7 @@ import { SendParam, MessagingFee, MessagingReceipt, OFTReceipt } from "node_modu
 
 //Note: To be deployed everywhere else, outside of the home chain
 //      18 dp
-contract MocaOFT is OFT, EIP3009 {
+contract MocaOFT is OFT, EIP3009, Ownable2Step {
 
     string internal constant _version = "v1";
     
@@ -121,7 +122,7 @@ contract MocaOFT is OFT, EIP3009 {
      * @dev Only an operator or owner of the OApp can call this function.
      */
     function resetPeer(uint32 eid) external {
-        require(operators[msg.sender] == true || msg.sender == owner(), "Not Operator");
+        require(operators[msg.sender] || msg.sender == owner(), "Not Operator");
 
         peers[eid] = bytes32(0);
         emit PeerSet(eid, bytes32(0));
@@ -318,5 +319,24 @@ contract MocaOFT is OFT, EIP3009 {
         );
     }
 
+    /*//////////////////////////////////////////////////////////////
+                              OWNABLE2STEP
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Starts the ownership transfer of the contract to a new account. Replaces the pending transfer if there is one.
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public override(Ownable, Ownable2Step) onlyOwner {
+        Ownable2Step.transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`) and deletes any pending owner.
+     * Internal function without access restriction.
+     */
+    function _transferOwnership(address newOwner) internal override(Ownable, Ownable2Step) {
+        Ownable2Step._transferOwnership(newOwner);
+    }
 
 }
