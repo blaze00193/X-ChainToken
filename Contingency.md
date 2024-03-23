@@ -39,8 +39,8 @@ So we must be mindful in assessing intent quickly.
 
 ## Alternative Measure: Breaking Bridges
 
-We can disconnect the connection between contracts by resetting `setPeers`.
-For example, when an incorrect lz event is emitted on the src chain, we look to disconnect the bridge by calling `setPeers` on the dst chain. By breaking the connection between chains, on the dst chain we can essentially front-run the LZ relay and prevent a malicious mint.
+We can disconnect the connection between contracts by calling `resetPeer`.
+For example, when an incorrect lz event is emitted on the src chain, we look to disconnect the bridge by calling `resetPeer` on the dst chain. By breaking the connection between chains, on the dst chain we can essentially front-run the LZ relay and prevent a malicious mint.
 
 ![alt text](image.png)
 **It is important to note that the end result of creating this blockage is that tokens will be lost on the src chain.**

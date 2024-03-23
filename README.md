@@ -105,15 +105,15 @@ Putting in place x-chain transfer limits essentially allows us to limit the capi
 
 V1: Deploy.s.sol
 
-- MocaToken: https://sepolia.etherscan.io/address/0xa2e400ce40c83270d8369ec971d0fc2e46d5056a
-- MocaTokenAdaptor: https://sepolia.etherscan.io/address/0x5a9962874aca3b407aceb14f64c7ef2c6255c880
-- MocaOFT: https://mumbai.polygonscan.com/address/0xaa7a95e597a65eb06dae4ed54f1b62e0535d9156
+- MocaToken: https://sepolia.etherscan.io/address/0xFe149349285995D59Ec3FD6A5080840443906B45
+- MocaTokenAdaptor: https://sepolia.etherscan.io/address/0xa8F355AE124d7120dAEA13239b6cC89FB0376779
+- MocaOFT: https://mumbai.polygonscan.com/address/0x0EB26b982341c37A02812738C6c10EB0b66ef4F7
 
 V2: DeployMock.s.sol (has unrestricted mint function)
 
-- MocaTokenMock: https://sepolia.etherscan.io/address/0xacb0cb4f7aef9889b488a995b0fbc8564ecc36cb
-- MocaTokenAdaptor: https://sepolia.etherscan.io/address/0x5348e3eeabe88d801cd6cd734d9ed390b9f5cb5c
-- MocaOFT: https://mumbai.polygonscan.com/address/0xff891133f96a54d2b20f2ff56988c1cadb508d13
+- MocaTokenMock: https://sepolia.etherscan.io/address/0xE93f35988731A11280032FD8B7338B1ac3f52729
+- MocaTokenAdaptor: https://sepolia.etherscan.io/address/0xb440A7367DfEB307Cb2E7e3Cb80625157126A5CA
+- MocaOFT: https://mumbai.polygonscan.com/address/0xE415dCa40E5587AF6DeC72683a55ebEbA911Ba6e
 
 Please feel free to use V2 to make your own testnet transactions - the MocaToken contract in this deployment batch has an unrestricted public mint function.
 V1 does not, and is meant to reflect how an actual deployment would be.
@@ -155,9 +155,17 @@ The DevTools repo is especially useful for reference examples:
 - [devtools](https://github.com/LayerZero-Labs/devtools/?tab=readme-ov-file#bootstrapping-an-example-cross-chain-project)
 
 
-## Wallet and Ownership
+## Priviledged Functions
 
-Both MocaTokenAdaptor and MocaOFT inherit Ownable. The owner address must be specified upon deployment.
+Both MocaTokenAdaptor and MocaOFT inherit Ownable and Ownable2Step. The owner address must be specified upon deployment.
+
+Beside the owner, the other available privileged roles are:
+
+- Operator
+- Delegate (from LZ)
+
+The operator is introduced by us and serves a singular purpose - calling resetPeer during a moment of crisis.
+
 Owner can execute the following functions:
 
 - setPeer
@@ -169,7 +177,7 @@ Owner can execute the following functions:
 
 ### setPeer
 
-Provides the ability to connect two OFT contract across different chains or break the bridge. The owner can connect and disconnect - an assigned operator can also call this function
+Provides the ability to connect two OFT contract across different chains or break the bridge. The owner can connect and disconnect.
 
 ### setDelegate
 
@@ -180,7 +188,7 @@ Additionally, delegates can instruct the OFT contracts to burn(clear), to retry 
 
 ### setOutboundLimit and setInboundLimit
 
-Allows setting of incoming and outgoing rate limits with respect to x-chain token transfers. Limits are not global, and are set on a per chain basis. 
+Allows setting of incoming and outgoing rate limits with respect to x-chain token transfers. Limits are not global, and are set on a per chain basis.
 
 ### setWhitelist
 
@@ -188,23 +196,38 @@ Owner to set whitelist and revoke addresses - rate limits do not apply to these 
 
 ### setOperator
 
-Owner to set and revoke operator addresses - these addresses can call setPeers, to disconnect or connect bridging between contracts.
+Owner to set and revoke operator addresses - these addresses can call resetPeer, to disconnect bridging between contracts.
 
-Beside the owner, the other available privileged roles are:
+### resetPeer
 
-- Operator
-- Delegate
+Resets the peer address (OApp instance) for a corresponding endpoint. Callable by owner or operator. 
 
-As mentioned above, an operator can call the function setPeers to break or build a connection between two x-chain contracts. The delegate can block and clear potentially malicious messages.
+### resetReceivedTokenAmount
+
+Resets the accrued received amount for specified chain. If the rate limit has been hit for a specific epoch, owner can call this function to reset the prior cumulative received amount, to allow receivals to continue uninterrupted. 
+
+Useful to reset, instead of having to increase and decrease limits.
+
+### resetSentTokenAmount
+
+Resets the accrued sent amount for specified chain. If the rate limit has been hit for a specific epoch, owner can call this function to reset the prior cumulative sent amount, to allow sending to continue uninterrupted. 
+
+Useful to reset, instead of having to increase and decrease limits.
+
+## Wallets
+
+As mentioned above, an operator can call the function resetPeers to break or build a connection between two x-chain contracts. The delegate can block and clear potentially malicious messages.
+
 Both these roles would be useful from a risk monitoring and management standpoint as they can either terminate a specific message or the entire connection during an emergency.
-To that end, these addresses would have to be paired with an off-chain script that serves as a monitoring solution, sending in a timely transaction to disconnect bridging or reject a specific message. 
 
-They cannot be multi-sigs addresses, as that would result in a delayed reaction. Am exploring Tenderly and Sphinx for a safe execution environment for these private-key enabled scripts.
+To that end, these addresses would have to be paired with an off-chain script that serves as a monitoring solution, sending in a timely transaction to disconnect bridging or reject a specific message. They cannot be multi-sigs addresses, as that would result in a delayed reaction.
+
+Can use Tenderly as a safe execution environment for these private-key enabled scripts. Additionally, for extra redundancy, can have an AWS script.
 
 The owner address however should be a multi-sig, as it has the ability to:
 
 - change whitelisted addresses
-- change rate limits 
+- change rate limits
 - add/remove operators/delegates
 
 This should be a carefully considered and implemented process, which makes sense for a multi-sig -  a 2 out 3 should suffice. We can use gnosis safe.

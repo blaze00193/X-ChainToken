@@ -80,11 +80,11 @@ contract DeployElsewhere is Script, LZState {
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0xacb0Cb4f7aef9889B488A995B0FBC8564eCc36Cb);    
-    address public mocaTokenAdapterAddress = address(0x5348e3EeABE88D801cd6Cd734D9Ed390B9F5cb5C);                     
+    address public mocaTokenAddress = address(0xE93f35988731A11280032FD8B7338B1ac3f52729);    
+    address public mocaTokenAdapterAddress = address(0xb440A7367DfEB307Cb2E7e3Cb80625157126A5CA);                     
 
     // remote
-    address public mocaOFTAddress = address(0xff891133F96a54d2B20F2ff56988C1caDB508D13);
+    address public mocaOFTAddress = address(0xE415dCa40E5587AF6DeC72683a55ebEbA911Ba6e);
 
     // set contracts
     MocaTokenMock public mocaToken = MocaTokenMock(mocaTokenAddress);
@@ -183,6 +183,8 @@ contract SetGasLimitsAway is State, Script {
 
 // forge script script/DeployMock.s.sol:SetGasLimitsAway --rpc-url polygon_mumbai --broadcast -vvvv
 
+// ------------------------------------------- Set Rate Limits  -----------------------------------------
+
 contract SetRateLimitsHome is State, Script {
 
     function run() public {
@@ -229,8 +231,6 @@ contract SendTokensToAway is State, Script {
 
         //set approval for adaptor to spend tokens
         mocaToken.approve(mocaTokenAdapterAddress, 10 ether);
-        //mocaToken.approve(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db, 0 ether);
-
         
         bytes memory nullBytes = new bytes(0);
         SendParam memory sendParam = SendParam({

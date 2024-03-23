@@ -43,7 +43,7 @@ contract DeployHome is Script, LZState {
         
         // set msg.sender as delegate and owner
         address deletate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
-        address owner = 0x17bEA8F4ce3a933544b120b736A31a291482480c;
+        address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         MocaTokenAdapter mocaTokenAdapter = new MocaTokenAdapter(address(mocaToken), homeLzEP, deletate, owner);
 
         vm.stopBroadcast();
@@ -81,11 +81,11 @@ contract DeployElsewhere is Script, LZState {
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0xA2E400CE40C83270d8369eC971D0fc2e46D5056a);    
-    address public mocaTokenAdapterAddress = address(0x5a9962874acA3b407aCeB14f64C7eF2C6255C880);                     
+    address public mocaTokenAddress = address(0xFe149349285995D59Ec3FD6A5080840443906B45);    
+    address public mocaTokenAdapterAddress = address(0xa8F355AE124d7120dAEA13239b6cC89FB0376779);                     
 
     // remote
-    address public mocaOFTAddress = address(0xaa7A95e597a65EB06DaE4eD54f1b62e0535d9156);
+    address public mocaOFTAddress = address(0x0EB26b982341c37A02812738C6c10EB0b66ef4F7);
 
     // set contracts
     MocaToken public mocaToken = MocaToken(mocaTokenAddress);
@@ -346,7 +346,8 @@ contract SendTokensToRemotePlusGas is State, Script {
 //   tokens locked in adaptor on home chain
 //   nothing minted on the dst. 
 //   LZ relaying failed: https://testnet.layerzeroscan.com/tx/0xc76c780e0ab4a7ae4cbf1375d3795afbbf2cde09403c64174d1c32b011891420
-//   the user has "lost" a token, as there is no way to retrieve it from the adaptor.
+//   the user has "lost" a token. txn has to be retried on dst.
+
 
 contract BreakBridge is State, Script {
     function run() public {
