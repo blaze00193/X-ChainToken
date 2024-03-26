@@ -453,7 +453,7 @@ contract SetDvnHome is State, Script, DvnData {
             uint8 optionalDVNThreshold; 
             address[] memory optionalDVNs;
 
-            uint8 requiredDVNCount = 4; 
+            uint8 requiredDVNCount = 2; 
             address[] memory requiredDVNs = new address[](2); 
                 requiredDVNs[0] = layerZero_testnet_polygon;
                 requiredDVNs[1] = nethermind_testnet_ethereum;
