@@ -701,6 +701,24 @@ abstract contract StateRateLimits is StateDeployed {
 
 contract StateRateLimitsTest is StateRateLimits {
 
+    function testCannotSendAndCall() public {
+        
+        bytes memory nullBytes = new bytes(0);
+        SendParam memory sendParam = SendParam({
+            dstEid: 1,                                                               // Destination endpoint ID.
+            to: bytes32(uint256(uint160(userA))),  // Recipient address.
+            amountLD: 1 ether,                                                                  // Amount to send in local decimals        
+            minAmountLD: 1 ether,                                                               // Minimum amount to send in local decimals.
+            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
+            composeMsg: "sendANdCALL",                                                           // The composed message for the send() operation.
+            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
+        });
+
+        vm.prank(userA);
+        vm.expectRevert(abi.encodeWithSelector(MocaOFT.SendAndCallBlocked.selector));
+        mocaToken.send(sendParam, MessagingFee({nativeFee: 1 ether, lzTokenFee: 0}), userA);
+    }
+
     function testCannotExceedGlobalSupply() public {
         vm.startPrank(userA);
         mocaToken.mint(8_888_888_888 ether);

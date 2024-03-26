@@ -39,6 +39,7 @@ contract MocaTokenAdapter is OFTAdapter, Ownable2Step {
     // errors
     error ExceedInboundLimit(uint256 limit, uint256 amount);
     error ExceedOutboundLimit(uint256 limit, uint256 amount);
+    error SendAndCallBlocked();
 
     /**
      * @param token a deployed, already existing ERC20 token address
@@ -208,7 +209,7 @@ contract MocaTokenAdapter is OFTAdapter, Ownable2Step {
     } 
 
 
-    /**
+    /** Note: Override to block composed messages
      * @dev Executes the send operation.
      * @param _sendParam The parameters for the send operation.
      * @param _fee The calculated fee for the send() operation.
@@ -237,7 +238,7 @@ contract MocaTokenAdapter is OFTAdapter, Ownable2Step {
         (bytes memory message, bytes memory options) = _buildMsgAndOptions(_sendParam, amountReceivedLD);
 
         // block sendAndCall
-        if(isComposed(message)) revert("SendAndCallBlocked");
+        if(isComposed(message)) revert SendAndCallBlocked();
 
         // @dev Sends the message to the LayerZero endpoint and returns the LayerZero msg receipt.
         msgReceipt = _lzSend(_sendParam.dstEid, message, options, _fee, _refundAddress);

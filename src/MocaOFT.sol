@@ -47,6 +47,7 @@ contract MocaOFT is OFT, EIP3009, Ownable2Step {
     error ExceedInboundLimit(uint256 limit, uint256 amount);
     error ExceedOutboundLimit(uint256 limit, uint256 amount);
     error ExceedGlobalSupply(uint256 currentOftSupply, uint256 incomingMintAmount);
+    error SendAndCallBlocked();
 
     /**
      * @param name token name
@@ -262,7 +263,7 @@ contract MocaOFT is OFT, EIP3009, Ownable2Step {
         (bytes memory message, bytes memory options) = _buildMsgAndOptions(_sendParam, amountReceivedLD);
 
         // block sendAndCall
-        if(isComposed(message)) revert("SendAndCallBlocked");
+        if(isComposed(message)) revert SendAndCallBlocked(); 
 
         // @dev Sends the message to the LayerZero endpoint and returns the LayerZero msg receipt.
         msgReceipt = _lzSend(_sendParam.dstEid, message, options, _fee, _refundAddress);

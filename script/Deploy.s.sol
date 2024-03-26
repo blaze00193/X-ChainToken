@@ -7,7 +7,7 @@ import {MocaToken} from "./../src/MocaToken.sol";
 import {MocaOFT} from "./../src/MocaOFT.sol";
 import {MocaTokenAdapter} from "./../src/MocaTokenAdapter.sol";
 
-abstract contract LZState {
+abstract contract LZState is Script {
     
     //Note: LZV2 testnet addresses
 
@@ -25,15 +25,23 @@ abstract contract LZState {
 
     uint16 remoteChainID = mumbaiID;
     address remoteLzEP = mumbaiEP;
-}
 
-//Note: Deploy token + adaptor
-contract DeployHome is Script, LZState {
-    
-    function run() public {
+    modifier broadcast() {
 
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
+
+        _;
+
+        vm.stopBroadcast();
+    }
+}
+
+
+//Note: Deploy token + adaptor
+contract DeployHome is LZState {
+    
+    function run() public broadcast {
 
         // mint supply to treasury
         string memory name = "Moca"; 
@@ -45,22 +53,14 @@ contract DeployHome is Script, LZState {
         address deletate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         MocaTokenAdapter mocaTokenAdapter = new MocaTokenAdapter(address(mocaToken), homeLzEP, deletate, owner);
-
-        vm.stopBroadcast();
     }
 }
 
 
-// forge script script/Deploy.s.sol:DeployHome --rpc-url sepolia --broadcast --verify -vvvv --etherscan-api-key sepolia
-    
-
 //Note: Deploy OFT on remote
-contract DeployElsewhere is Script, LZState {
+contract DeployElsewhere is LZState {
 
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    function run() public broadcast {
 
         //params
         string memory name = "TestToken"; 
@@ -69,23 +69,19 @@ contract DeployElsewhere is Script, LZState {
         address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
 
         MocaOFT remoteOFT = new MocaOFT(name, symbol, remoteLzEP, delegate, owner);
-        vm.stopBroadcast();
     }
 }
-
-// forge script script/Deploy.s.sol:DeployElsewhere --rpc-url polygon_mumbai --broadcast --verify -vvvv --etherscan-api-key polygon_mumbai
-
 
 //------------------------------ SETUP ------------------------------------
 
 abstract contract State is LZState {
     
     // home
-    address public mocaTokenAddress = address(0xFe149349285995D59Ec3FD6A5080840443906B45);    
-    address public mocaTokenAdapterAddress = address(0xa8F355AE124d7120dAEA13239b6cC89FB0376779);                     
+    address public mocaTokenAddress = address(0x0);    
+    address public mocaTokenAdapterAddress = address(0x0);                     
 
     // remote
-    address public mocaOFTAddress = address(0x0EB26b982341c37A02812738C6c10EB0b66ef4F7);
+    address public mocaOFTAddress = address(0x0);
 
     // set contracts
     MocaToken public mocaToken = MocaToken(mocaTokenAddress);
@@ -96,53 +92,39 @@ abstract contract State is LZState {
 
 
 // ------------------------------------------- Trusted Remotes: connect contracts -------------------------
-contract SetRemoteOnHome is State, Script {
+contract SetRemoteOnHome is State {
 
-    function run() public  {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-       
+    function run() public broadcast {
         // eid: The endpoint ID for the destination chain the other OFT contract lives on
         // peer: The destination OFT contract address in bytes32 format
         bytes32 peer = bytes32(uint256(uint160(address(mocaOFTAddress))));
         mocaTokenAdapter.setPeer(remoteChainID, peer);
-        
-        vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:SetRemoteOnHome --rpc-url sepolia --broadcast -vvvv
+// 
 
-contract SetRemoteOnAway is State, Script {
+contract SetRemoteOnAway is State {
 
-    function run() public {
-        
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
+    function run() public broadcast {
         // eid: The endpoint ID for the destination chain the other OFT contract lives on
         // peer: The destination OFT contract address in bytes32 format
         bytes32 peer = bytes32(uint256(uint160(address(mocaTokenAdapter))));
         mocaOFT.setPeer(homeChainID, peer);
         
-        vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:SetRemoteOnAway --rpc-url polygon_mumbai --broadcast -vvvv
-
+//
 
 // ------------------------------------------- Gas Limits -------------------------
 
 import { IOAppOptionsType3, EnforcedOptionParam } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/interfaces/IOAppOptionsType3.sol";
 
-contract SetGasLimitsHome is State, Script {
+contract SetGasLimitsHome is State {
 
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
+    function run() public broadcast {
+        
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
         // options: -> A typical lzReceive call will use 200000 gas on most EVM chains         
@@ -153,19 +135,15 @@ contract SetGasLimitsHome is State, Script {
         enforcedOptionParams[1] = EnforcedOptionParam(remoteChainID, 2, hex"000301001303000000000000000000000000000000000000");
 
         mocaTokenAdapter.setEnforcedOptions(enforcedOptionParams);
-
-        vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:SetGasLimitsHome --rpc-url sepolia --broadcast -vvvv
+// 
 
 
-contract SetGasLimitsAway is State, Script {
+contract SetGasLimitsAway is State {
 
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    function run() public broadcast {
         
         EnforcedOptionParam memory enforcedOptionParam;
         // msgType:1 -> a standard token transfer via send()
@@ -177,237 +155,41 @@ contract SetGasLimitsAway is State, Script {
         enforcedOptionParams[1] = EnforcedOptionParam(homeChainID, 2, hex"000301001303000000000000000000000000000000000000");
 
         mocaOFT.setEnforcedOptions(enforcedOptionParams);
-
-        vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:SetGasLimitsAway --rpc-url polygon_mumbai --broadcast -vvvv
+//
 
 // ------------------------------------------- Set Rate Limits  -----------------------------------------
 
-contract SetRateLimitsHome is State, Script {
+contract SetRateLimitsHome is State {
 
-    function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
+    function run() public broadcast {
+        
         mocaTokenAdapter.setOutboundLimit(remoteChainID, 10 ether);
         mocaTokenAdapter.setInboundLimit(remoteChainID, 10 ether);
-
-        vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:SetRateLimitsHome --rpc-url sepolia --broadcast -vvvv
+//
 
-contract SetRateLimitsRemote is State, Script {
+contract SetRateLimitsRemote is State {
 
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
+    function run() public broadcast {
 
         mocaOFT.setOutboundLimit(homeChainID, 10 ether);
         mocaOFT.setInboundLimit(homeChainID, 10 ether);
-
-        vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:SetRateLimitsRemote --rpc-url polygon_mumbai --broadcast -vvvv
+//
 
-// ------------------------------------------- Send sum tokens  -----------------------------------------
 
-// SendParam
-import "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
-import { MessagingParams, MessagingFee, MessagingReceipt, IMessageLibManager, ILayerZeroEndpointV2 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
+// ------------------------------------------- DVN Config  -----------------------------------------
 import { SetConfigParam } from "node_modules/@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
+import { UlnConfig } from "node_modules/@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
 
-contract SendTokensToAway is State, Script {
-
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
-        //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdapterAddress, 1 ether);
-
-        
-        bytes memory nullBytes = new bytes(0);
-        SendParam memory sendParam = SendParam({
-            dstEid: remoteChainID,                                                               // Destination endpoint ID.
-            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),  // Recipient address.
-            amountLD: 1 ether,                                                                   // Amount to send in local decimals        
-            minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
-            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
-            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
-            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
-        });
-
-        // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
-
-        // send tokens xchain
-        mocaTokenAdapter.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
-
-        vm.stopBroadcast();
-    }
-}
-
-//  forge script script/Deploy.s.sol:SendTokensToAway --rpc-url sepolia --broadcast -vvvv
-
-contract SendTokensToHome is State, Script {
-
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-        
-        bytes memory nullBytes = new bytes(0);
-        SendParam memory sendParam = SendParam({
-            dstEid: homeChainID,                                                                 // Destination endpoint ID.
-            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),  // Recipient address.
-            amountLD: 1 ether,                                                                   // Amount to send in local decimals        
-            minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
-            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
-            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
-            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
-        });
-
-        // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaOFT.quoteSend(sendParam, false);
-        //MessagingFee memory messagingFee = mocaTokenAdapter.quoteOFT(sendParam);
-
-        // send tokens xchain
-        mocaOFT.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
-
-        vm.stopBroadcast();
-    }
-}
-
-//  forge script script/Deploy.s.sol:SendTokensToHome --rpc-url polygon_mumbai --broadcast -vvvv
-
-
-contract SendTokensToRemotePlusGas is State, Script {
-
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
-        //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdapterAddress, 1 ether);
-        
-        // createLzNativeDropOption
-        // gas: 6000000000000000 (amount of native gas to drop in wei)
-        // receiver: 0x000000000000000000000000de05a1abb121113a33eed248bd91ddc254d5e9db (address in bytes32)
-        bytes memory extraOptions = hex"0003010031020000000000000000001550f7dca70000000000000000000000000000de05a1abb121113a33eed248bd91ddc254d5e9db";
-
-        bytes memory nullBytes = new bytes(0);
-        SendParam memory sendParam = SendParam({
-            dstEid: remoteChainID,                                                                  // Destination endpoint ID.
-            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),     // Recipient address.
-            amountLD: 1 ether,                                                                      // Amount to send in local decimals        
-            minAmountLD: 1 ether,                                                                   // Minimum amount to send in local decimals.
-            extraOptions: extraOptions,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
-            composeMsg: nullBytes,                                                               // The composed message for the send() operation.
-            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
-        });
-
-        // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
-
-        // send tokens xchain
-        mocaTokenAdapter.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
-
-        vm.stopBroadcast();
-    }
-}
-
-//  forge script script/Deploy.s.sol:SendTokensToRemotePlusGas --rpc-url sepolia --broadcast -vvvv
-
-
-// matic before: 1.35870840179732543 MATIC
-// matic after: 1.36470840179732543 MATIC
-// delta of 0.006 matic, as specified by gas dropped.
-
-
-//Note: User bridges tokens.
-//      Txn clears on src chain
-//      Bridge is d/c on the dst chain, before message is received
-//      what happens to the user token?    
-
-
-//  starting balance: 8888888885000000000000000000
-//  1. SendTokensToAway: send tokens on src
-//  2. BreakBridge: break bridge on dst
-//  Result:
-//   tokens locked in adaptor on home chain
-//   nothing minted on the dst. 
-//   LZ relaying failed: https://testnet.layerzeroscan.com/tx/0xc76c780e0ab4a7ae4cbf1375d3795afbbf2cde09403c64174d1c32b011891420
-//   the user has "lost" a token. txn has to be retried on dst.
-
-
-contract BreakBridge is State, Script {
-    function run() public {
-        
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
-        // eid:  The endpoint ID for the destination chain the other OFT contract lives on
-        // peer: The destination OFT contract address in bytes32 format
-        //        Set this to bytes32(0) to remove the peer address.
-        mocaOFT.setPeer(homeChainID,  bytes32(0));
-        
-        vm.stopBroadcast();
-    }
-}
-
-// forge script script/Deploy.s.sol:BreakBridge --rpc-url polygon_mumbai --broadcast -vvvv
-
-
-contract SendAndCallToRemote is State, Script {
-        
-    function run() public {
-
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
-        //set approval for adaptor to spend tokens
-        mocaToken.approve(mocaTokenAdapterAddress, 1e18);
-
-        
-        bytes memory nullBytes = new bytes(0);
-        SendParam memory sendParam = SendParam({
-            dstEid: remoteChainID,                                                               // Destination endpoint ID.
-            to: bytes32(uint256(uint160(address(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db)))),  // Recipient address.
-            amountLD: 1 ether,                                                                   // Amount to send in local decimals        
-            minAmountLD: 1 ether,                                                                // Minimum amount to send in local decimals.
-            extraOptions: nullBytes,                                                             // Additional options supplied by the caller to be used in the LayerZero message.
-            composeMsg: "sendANdCALL",                                                                // The composed message for the send() operation.
-            oftCmd: nullBytes                                                                    // The OFT command to be executed, unused in default OFT implementations.
-        });
-
-        // Fetching the native fee for the token send operation
-        MessagingFee memory messagingFee = mocaTokenAdapter.quoteSend(sendParam, false);
-
-        // send tokens xchain
-       mocaTokenAdapter.send{value: messagingFee.nativeFee}(sendParam, messagingFee, payable(0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db));
-
-        vm.stopBroadcast();
-    }
-}
-
-// forge script script/Deploy.s.sol:SendAndCallToRemote --rpc-url sepolia --broadcast -vvvv
-
-
-
-// gas for sendPlusGas: 246,093  - 376,507
-// gas for send: 241,340 - 369,942
-
-abstract contract DvnData {
+abstract contract DvnData is State {
     
     address public layerZero_mainnet = 0x589dEDbD617e0CBcB916A9223F4d1300c294236b;
     address public layerZero_polygon = 0x23DE2FE932d9043291f870324B74F820e11dc81A;
@@ -421,44 +203,45 @@ abstract contract DvnData {
     address public nethermind_mainnet = 0xa59BA433ac34D2927232918Ef5B2eaAfcF130BA5;
     address public nethermind_polygon = 0x31F748a368a893Bdb5aBB67ec95F232507601A73;
 
-    //..............................................................................
-
-    // testnet addressses 
-    address public layerZero_testnet_sepolia = 0x8eebf8b423B73bFCa51a1Db4B7354AA0bFCA9193;
-    address public layerZero_testnet_polygon = 0x67a822F55C5F6E439550b9C4EA39E406480a40f3;
-
-    address public nethermind_testnet_ethereum = 0x715A4451Be19106BB7CefD81e507813E23C30768;
-    address public nethermind_testnet_polygon = 0xC460CEcfcc7A69665cCd41Ebf25Dd2572c18f657;
-
-    //..............................................................................
+    // ...........................................................................
 
     // https://docs.layerzero.network/contracts/messagelib-addresses
-    address public send302 = 0xcc1ae8Cf5D3904Cef3360A9532B477529b177cCE;
-    address public receive302 = 0xdAf00F5eE2158dD58E0d3857851c432E34A3A851;
+    address public send302_mainnet = 0xbB2Ea70C9E858123480642Cf96acbcCE1372dCe1;
+    address public receive302_mainnet = 0xc02Ab410f0734EFa3F14628780e6e695156024C2;
+    
+    address public send302_polygon = 0x6c26c61a97006888ea9e4fa36584c7df57cd9da3;
+    address public receive302_polygon = 0x1322871e4ab09Bc7f5717189434f97bBD9546e95;   
 }
 
-contract SetDvnHome is State, Script, DvnData {
+contract SetDvnHome is DvnData {
 
-    function run() public {
+    function run() public broadcast {
 
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(deployerPrivateKey);
-
+        // ulnConfig struct
+        UlnConfig memory ulnConfig; 
+            // confirmation on eth 
+            ulnConfig.confirmations = 15;      
+            
+            // optional
+            //0 indicate DEFAULT, NIL_DVN_COUNT indicate NONE (to override the value of default)
+            ulnConfig.optionalDVNCount; 
+            //no duplicates. sorted an an ascending order. allowed overlap with requiredDVNs
+            ulnConfig.optionalDVNThreshold; 
+            
+            //required
+            ulnConfig.requiredDVNCount = 4; 
+            address[] memory requiredDVNs = new address[](ulnConfig.requiredDVNCount); 
+                // no duplicates. sorted an an ascending order.
+                requiredDVNs[0] = layerZero_mainnet;
+                requiredDVNs[1] = animoca_mainnet;
+                requiredDVNs[2] = nethermind_mainnet;
+                requiredDVNs[3] = gcp;
+                
+            ulnConfig.requiredDVNs = requiredDVNs;
+        
         // config bytes
         bytes memory configBytes;
-            
-            uint64 confirmations = 15;        // confirmation on polygon 
-            
-            uint8 optionalDVNCount; 
-            uint8 optionalDVNThreshold; 
-            address[] memory optionalDVNs;
-
-            uint8 requiredDVNCount = 2; 
-            address[] memory requiredDVNs = new address[](2); 
-                requiredDVNs[0] = layerZero_testnet_polygon;
-                requiredDVNs[1] = nethermind_testnet_ethereum;
-                
-        configBytes = abi.encode(confirmations, requiredDVNCount, optionalDVNCount, optionalDVNThreshold, requiredDVNs, optionalDVNs);
+        configBytes = abi.encode(ulnConfig);
 
         // params
         SetConfigParam memory param1 = SetConfigParam({
@@ -477,9 +260,58 @@ contract SetDvnHome is State, Script, DvnData {
 
         ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, send302, configParams);
         ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, receive302, configParams);
-
-        vm.stopBroadcast();
     }
 }
 
-// forge script script/Deploy.s.sol:SetDvnHome --rpc-url sepolia --broadcast -vvvv
+//
+
+//Note: Polygon
+contract SetDvnRemote is DvnData {
+
+    function run() public broadcast {
+
+        // ulnConfig struct
+        UlnConfig memory ulnConfig; 
+            // confirmation on eth 
+            ulnConfig.confirmations = 768;      
+            
+            // optional
+            //0 indicate DEFAULT, NIL_DVN_COUNT indicate NONE (to override the value of default)
+            ulnConfig.optionalDVNCount; 
+            //no duplicates. sorted an an ascending order. allowed overlap with requiredDVNs
+            ulnConfig.optionalDVNThreshold; 
+            
+            //required
+            ulnConfig.requiredDVNCount = 4; 
+            address[] memory requiredDVNs = new address[](ulnConfig.requiredDVNCount); 
+                // no duplicates. sorted an an ascending order.
+                requiredDVNs[0] = layerZero_polygon;
+                requiredDVNs[1] = nethermind_polygon;
+                requiredDVNs[2] = animoca_polygon;
+                requiredDVNs[3] = gcp;
+                
+            ulnConfig.requiredDVNs = requiredDVNs;
+        
+        // config bytes
+        bytes memory configBytes;
+        configBytes = abi.encode(ulnConfig);
+
+        // params
+        SetConfigParam memory param1 = SetConfigParam({
+            eid: homeChainID,     // dstEid
+            configType: 2,
+            config: configBytes
+        });
+
+        // array of params
+        SetConfigParam[] memory configParams = new SetConfigParam[](1);
+        configParams[0] = param1;
+        
+        //call endpoint
+        address endPointAddress = remoteLzEP;
+        address oappAddress = mocaOFTAddress;
+
+        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, send302, configParams);
+        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, receive302, configParams);
+    }
+}
