@@ -12,7 +12,6 @@ import { EIP712 } from "./utils/EIP712.sol";
 import { Origin } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 import { SendParam, MessagingFee, MessagingReceipt, OFTReceipt } from "node_modules/@layerzerolabs/lz-evm-oapp-v2/contracts/oft/interfaces/IOFT.sol";
 
-
 //Note: To be deployed everywhere else, outside of the home chain
 //      18 dp
 contract MocaOFT is OFT, EIP3009, Ownable2Step {
@@ -233,6 +232,56 @@ contract MocaOFT is OFT, EIP3009, Ownable2Step {
         return amountReceivedLD;
     } 
 
+
+    /**
+     * @dev Executes the send operation.
+     * @param _sendParam The parameters for the send operation.
+     * @param _fee The calculated fee for the send() operation.
+     *      - nativeFee: The native fee.
+     *      - lzTokenFee: The lzToken fee.
+     * @param _refundAddress The address to receive any excess funds.
+     * @return msgReceipt The receipt for the send operation.
+     * @return oftReceipt The OFT receipt information.
+     *
+     * @dev MessagingReceipt: LayerZero msg receipt
+     *  - guid: The unique identifier for the sent message.
+     *  - nonce: The nonce of the sent message.
+     *  - fee: The LayerZero fee incurred for the message.
+     */
+    function send(SendParam calldata _sendParam, MessagingFee calldata _fee, address _refundAddress) external payable override returns (MessagingReceipt memory msgReceipt, OFTReceipt memory oftReceipt) {
+        // @dev Applies the token transfers regarding this send() operation.
+        // - amountSentLD is the amount in local decimals that was ACTUALLY sent from the sender.
+        // - amountReceivedLD is the amount in local decimals that will be credited to the recipient on the remote OFT instance.
+        (uint256 amountSentLD, uint256 amountReceivedLD) = _debit(
+            _sendParam.amountLD,
+            _sendParam.minAmountLD,
+            _sendParam.dstEid
+        );
+
+        // @dev Builds the options and OFT message to quote in the endpoint.
+        (bytes memory message, bytes memory options) = _buildMsgAndOptions(_sendParam, amountReceivedLD);
+
+        // block sendAndCall
+        if(isComposed(message)) revert("SendAndCallBlocked");
+
+        // @dev Sends the message to the LayerZero endpoint and returns the LayerZero msg receipt.
+        msgReceipt = _lzSend(_sendParam.dstEid, message, options, _fee, _refundAddress);
+        // @dev Formulate the OFT receipt.
+        oftReceipt = OFTReceipt(amountSentLD, amountReceivedLD);
+
+        emit OFTSent(msgReceipt.guid, _sendParam.dstEid, msg.sender, amountSentLD);
+    }
+
+    /** 
+     * @dev Checks if the OFT message is composed. Copied from OFTMsgCodec.sol
+     * @param _msg The OFT message.
+     * @return A boolean indicating whether the message is composed.
+     */
+    function isComposed(bytes memory _msg) internal pure returns (bool) {
+        // uint8 private constant SEND_AMOUNT_SD_OFFSET = 40;
+        // return _msg.length > SEND_AMOUNT_SD_OFFSET
+        return _msg.length > 40;
+    }
 
     /*//////////////////////////////////////////////////////////////
                                 EIP3009
