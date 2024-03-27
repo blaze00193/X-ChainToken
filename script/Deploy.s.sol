@@ -9,22 +9,17 @@ import {MocaTokenAdapter} from "./../src/MocaTokenAdapter.sol";
 
 abstract contract LZState is Script {
     
-    //Note: LZV2 testnet addresses
+    uint16 public ethereumID = 30101;
+    address public ethereumEP = 0x1a44076050125825900e736c501f859c50fE728c;
 
-    uint16 public sepoliaID = 40161;
-    address public sepoliaEP = 0x6EDCE65403992e310A62460808c4b910D972f10f;
+    uint16 public polygonID = 30109;
+    address public polygonEP = 0x1a44076050125825900e736c501f859c50fE728c;
 
-    uint16 public mumbaiID = 40109;
-    address public mumbaiEP = 0x6EDCE65403992e310A62460808c4b910D972f10f;
+    uint16 homeChainID = ethereumID;
+    address homeLzEP = ethereumEP;
 
-    uint16 public arbSepoliaID = 40231;
-    address public arbSepoliaEP = 0x6EDCE65403992e310A62460808c4b910D972f10f;
-
-    uint16 homeChainID = sepoliaID;
-    address homeLzEP = sepoliaEP;
-
-    uint16 remoteChainID = mumbaiID;
-    address remoteLzEP = mumbaiEP;
+    uint16 remoteChainID = polygonID;
+    address remoteLzEP = polygonEP;
 
     modifier broadcast() {
 
@@ -41,6 +36,8 @@ abstract contract LZState is Script {
 //Note: Deploy token + adaptor
 contract DeployHome is LZState {
     
+    // Note: update treasury, delegate addresses
+    //      ownership will be handed over to multisig after deployment and config
     function run() public broadcast {
 
         // mint supply to treasury
@@ -60,6 +57,8 @@ contract DeployHome is LZState {
 //Note: Deploy OFT on remote
 contract DeployElsewhere is LZState {
 
+    // Note: update delegate address
+    //      ownership will be handed over to multisig after deployment and config
     function run() public broadcast {
 
         //params
@@ -188,6 +187,7 @@ contract SetRateLimitsRemote is State {
 // ------------------------------------------- DVN Config  -----------------------------------------
 import { SetConfigParam } from "node_modules/@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/IMessageLibManager.sol";
 import { UlnConfig } from "node_modules/@layerzerolabs/lz-evm-messagelib-v2/contracts/uln/UlnBase.sol";
+import { ILayerZeroEndpointV2 } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ILayerZeroEndpointV2.sol";
 
 abstract contract DvnData is State {
     
@@ -209,7 +209,7 @@ abstract contract DvnData is State {
     address public send302_mainnet = 0xbB2Ea70C9E858123480642Cf96acbcCE1372dCe1;
     address public receive302_mainnet = 0xc02Ab410f0734EFa3F14628780e6e695156024C2;
     
-    address public send302_polygon = 0x6c26c61a97006888ea9e4fa36584c7df57cd9da3;
+    address public send302_polygon = 0x6c26c61a97006888ea9E4FA36584c7df57Cd9dA3;
     address public receive302_polygon = 0x1322871e4ab09Bc7f5717189434f97bBD9546e95;   
 }
 
@@ -258,8 +258,8 @@ contract SetDvnHome is DvnData {
         address endPointAddress = homeLzEP;
         address oappAddress = mocaTokenAdapterAddress;
 
-        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, send302, configParams);
-        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, receive302, configParams);
+        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, send302_mainnet, configParams);
+        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, receive302_mainnet, configParams);
     }
 }
 
@@ -311,7 +311,32 @@ contract SetDvnRemote is DvnData {
         address endPointAddress = remoteLzEP;
         address oappAddress = mocaOFTAddress;
 
-        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, send302, configParams);
-        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, receive302, configParams);
+        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, send302_polygon, configParams);
+        ILayerZeroEndpointV2(endPointAddress).setConfig(oappAddress, receive302_polygon, configParams);
+    }
+}
+
+
+// ------------------------------------------- Transfer Ownership to multisig -----------------------------------------
+
+contract TransferOwnershipHome is DvnData {
+
+    //Note: update multisig address
+    function run() public broadcast {
+        
+        address multisig = address(0);
+        mocaTokenAdapter.transferOwnership(multisig);
+    }
+}
+
+// 
+
+contract TransferOwnershipRemote is DvnData {
+
+    //Note: update multisig address
+    function run() public broadcast {
+        
+        address multisig = address(0);
+        mocaOFT.transferOwnership(multisig);
     }
 }
