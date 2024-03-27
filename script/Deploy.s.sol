@@ -46,7 +46,6 @@ contract DeployHome is LZState {
         address treasury = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         MocaToken mocaToken = new MocaToken(name, symbol, treasury);
         
-        // set msg.sender as delegate and owner
         address deletate = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         address owner = 0xdE05a1Abb121113a33eeD248BD91ddC254d5E9Db;
         MocaTokenAdapter mocaTokenAdapter = new MocaTokenAdapter(address(mocaToken), homeLzEP, deletate, owner);
