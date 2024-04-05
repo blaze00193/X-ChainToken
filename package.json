@@ -1,10 +1,11 @@
 {
   "dependencies": {
-    "@layerzerolabs/lz-evm-oapp-v2": "^2.0.25"
+    "@layerzerolabs/lz-evm-oapp-v2": "^2.0.25",
+    "install": "^0.13.0"
   },
   "devDependencies": {
     "@openzeppelin/contracts": ">=5.0.2",
-    "@sphinx-labs/plugins": "^0.29.5"
+    "@sphinx-labs/plugins": "^0.31.0"
   },
   "resolutions": {
     "@openzeppelin/contracts": ">=5.0.2"

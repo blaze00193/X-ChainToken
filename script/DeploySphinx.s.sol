@@ -34,27 +34,25 @@ abstract contract LZState is Sphinx, Script {
     uint256 homeChainId = 80001;     // mumbai
     uint256 remoteChainId = 421614;  // arb_sepolia
 
-
-    // Sphinx setup
-    function setUp() public {
-
-        sphinxConfig.owners = [address(0x5B7c596ef4804DC7802dB28618d353f7Bf14C619)]; // Add owner(s)
-        sphinxConfig.orgId = "clszio7580001djh8pvnrbaka"; // Add Sphinx org ID
-        
-        sphinxConfig.testnets = [
-            Network.arbitrum_sepolia,
-            Network.polygon_mumbai
-        ];
-
-        sphinxConfig.projectName = "TestTokenV2";
-        sphinxConfig.threshold = 1;
-    }
-
 }
 
 //Note: Deploy token + adaptor
 contract Deploy is Script, LZState {
     
+    // Sphinx setup
+    function configureSphinx() public override {
+        sphinxConfig.owners = [address(0x5B7c596ef4804DC7802dB28618d353f7Bf14C619)]; // Add owner(s)
+        sphinxConfig.orgId = "clu0e13bc0001t058dr9pubfl"; // Add Sphinx org ID
+        
+        sphinxConfig.testnets = ["arbitrum_sepolia", "polygon_mumbai"];
+        sphinxConfig.mainnets = ["mainnet", "polygon"];
+
+        sphinxConfig.projectName = "TestTokenV2";
+        sphinxConfig.threshold = 1;
+
+        sphinxConfig.saltNonce = 1;  //in the event of project clash
+    }
+
     function run() public sphinx {
         
         MocaToken mocaToken; 

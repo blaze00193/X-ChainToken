@@ -20,7 +20,8 @@ remappings = [
     arbitrum_sepolia = "https://arb-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
     polygon_mumbai = "https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
     bnb_testnet = "https://polygon-mumbai.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
-
+    mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
+    polygon = "https://polygon-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}"
 
 [etherscan]
     arbitrum_sepolia = { key = "${ARBISCAN_API_KEY}" }
